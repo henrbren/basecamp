@@ -1,4 +1,4 @@
-# Dev Dashboard
+# Basecamp
 
 Your local projects, one dashboard to rule them all.
 
@@ -19,10 +19,10 @@ A lightweight, self-hosted project dashboard that scans your directories, auto-d
 
 ```bash
 # Clone the repository
-git clone https://github.com/henrikbrendhagen/dev-dashboard.git
+git clone https://github.com/henrikbrendhagen/basecamp.git
 
 # Navigate into the folder
-cd dev-dashboard
+cd basecamp
 
 # Install dependencies
 npm install
@@ -34,16 +34,16 @@ npm install
 npm start
 ```
 
-The dashboard will open automatically in your default browser at [http://localhost:4200](http://localhost:4200).
+Basecamp will open automatically in your default browser at [http://localhost:4200](http://localhost:4200).
 
 > **Tip:** Set the environment variable `NO_OPEN=1` to prevent auto-opening the browser, or `PORT=8080` to use a different port.
 
 ### First launch
 
-When you start the dashboard for the first time you'll see a **welcome screen**. From here you can:
+When you start Basecamp for the first time you'll see a **welcome screen**. From here you can:
 
 1. **Type a path** to a directory that contains your projects (e.g. `~/Projects`) and click **Add**
-2. **Use auto-detected suggestions** - the dashboard checks common locations like `~/Projects`, `~/Developer`, `~/code`, etc.
+2. **Use auto-detected suggestions** - Basecamp checks common locations like `~/Projects`, `~/Developer`, `~/code`, etc.
 3. **Scan your computer** - click "scan your computer" to run the project scanner which walks your filesystem and finds every project automatically
 
 Once you've added at least one directory, click **Get Started** and you're good to go.
@@ -72,7 +72,7 @@ Every project gets context-aware action buttons:
 
 ### Process management
 - Start processes and see **live log output** in a built-in log viewer
-- **Auto port detection** - when a dev server prints a port, the dashboard picks it up and gives you an "Open in browser" button
+- **Auto port detection** - when a dev server prints a port, Basecamp picks it up and gives you an "Open in browser" button
 - Stop running processes with one click
 - Running processes are shown in the sidebar with their port
 
@@ -104,7 +104,7 @@ Click the **gear icon** to configure:
 - **Editor** - choose between Cursor, VS Code, Zed, Sublime Text, or WebStorm
 - **Port** - change the dashboard port (requires restart)
 
-Settings are stored in `~/.devdashboard.json`.
+Settings are stored in `~/.basecamp.json`.
 
 ---
 
@@ -112,7 +112,7 @@ Settings are stored in `~/.devdashboard.json`.
 
 ### Config file
 
-The config file is created automatically at `~/.devdashboard.json`:
+The config file is created automatically at `~/.basecamp.json`:
 
 ```json
 {
@@ -197,7 +197,7 @@ The config file is created automatically at `~/.devdashboard.json`:
 ## Project Structure
 
 ```
-dev-dashboard/
+basecamp/
 ├── server.js          # Express server, API, scanner, process management
 ├── public/
 │   └── index.html     # Entire frontend (HTML + CSS + JS, no build step)
@@ -219,7 +219,7 @@ The entire frontend is a single HTML file - no frameworks, no bundler, no build 
 Add to your `~/.zshrc` or `~/.bashrc`:
 
 ```bash
-alias dashboard="cd /path/to/dev-dashboard && NO_OPEN=1 node server.js &"
+alias basecamp="cd /path/to/basecamp && NO_OPEN=1 node server.js &"
 ```
 
 ### Using the start script
@@ -234,7 +234,7 @@ The script automatically finds Node.js (including via nvm), starts the server, a
 
 ## Troubleshooting
 
-**Dashboard won't start / port in use**
+**Basecamp won't start / port in use**
 ```bash
 # Kill any existing process on port 4200
 lsof -ti:4200 | xargs kill -9

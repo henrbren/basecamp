@@ -8,7 +8,7 @@ const app = express();
 
 // ─── Configuration ────────────────────────────────────────────────────
 
-const CONFIG_PATH = path.join(os.homedir(), '.devdashboard.json');
+const CONFIG_PATH = path.join(os.homedir(), '.basecamp.json');
 
 const DEFAULT_CONFIG = {
   projectDirectories: [],
@@ -612,7 +612,7 @@ app.delete('/api/projects/:name', (req, res) => {
 
 // ─── API: Scanner ─────────────────────────────────────────────────────
 
-const SCAN_CACHE_PATH = path.join(os.homedir(), '.devdashboard-scan.json');
+const SCAN_CACHE_PATH = path.join(os.homedir(), '.basecamp-scan.json');
 
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'venv', '__pycache__', '.cache', '.npm', '.nvm',
@@ -753,7 +753,7 @@ app.get('/api/scan/cached', (req, res) => {
 // ─── Start ────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`\n  Dev Dashboard running at http://localhost:${PORT}\n`);
+  console.log(`\n  Basecamp running at http://localhost:${PORT}\n`);
   console.log(`  Config: ${CONFIG_PATH}`);
   console.log(`  Directories: ${config.projectDirectories.length ? config.projectDirectories.join(', ') : '(none configured)'}\n`);
   if (!process.env.NO_OPEN) {

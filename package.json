@@ -1,7 +1,7 @@
 {
-  "name": "dev-dashboard",
+  "name": "basecamp",
   "version": "1.0.0",
-  "description": "A local development project dashboard that scans directories, detects project types, and provides quick actions",
+  "description": "Your local projects, one dashboard to rule them all. Scans directories, detects project types, and provides quick actions.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

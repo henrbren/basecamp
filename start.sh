@@ -13,5 +13,5 @@ if ! command -v node &>/dev/null; then
   exit 1
 fi
 
-echo "Starting Dev Dashboard..."
+echo "Starting Basecamp..."
 node server.js
