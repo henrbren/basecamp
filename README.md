@@ -19,7 +19,7 @@ A local development project dashboard that scans your project directories, auto-
 ## Quick Start
 
 ```bash
-git clone https://github.com/yourusername/dev-dashboard.git
+git clone https://github.com/henrikbrendhagen/dev-dashboard.git
 cd dev-dashboard
 npm install
 npm start
@@ -99,6 +99,10 @@ The dashboard is a lightweight Express server that:
 6. Auto-detects ports from process output for quick browser access
 
 No data leaves your machine. Everything runs locally.
+
+## Author
+
+Made with &hearts; by [Henrik Brendhagen](https://github.com/henrikbrendhagen)
 
 ## License
 

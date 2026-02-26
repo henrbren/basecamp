@@ -277,6 +277,64 @@
     .settings-row select { min-width:160px; }
     .settings-row input[type="number"] { width:100px; }
     .settings-note { font-size:11px; color:var(--text-muted); margin-top:8px; }
+
+    /* About modal */
+    .about-modal { width:420px; text-align:center; padding:40px 36px; }
+    .about-logo { width:80px; height:80px; background:linear-gradient(135deg,var(--accent),var(--pink)); border-radius:20px; display:inline-flex; align-items:center; justify-content:center; font-size:36px; font-weight:700; color:white; margin-bottom:24px; box-shadow:0 8px 32px rgba(99,102,241,0.3); }
+    .about-title { font-size:24px; font-weight:700; letter-spacing:-0.5px; margin-bottom:4px; }
+    .about-version { font-size:13px; color:var(--text-muted); margin-bottom:24px; font-family:'SF Mono',Monaco,monospace; }
+    .about-desc { font-size:14px; color:var(--text-dim); line-height:1.7; margin-bottom:28px; }
+    .about-divider { height:1px; background:var(--border); margin:0 -36px 28px; }
+    .about-made { font-size:13px; color:var(--text-muted); margin-bottom:6px; }
+    .about-heart { color:var(--pink); font-style:normal; }
+    .about-author { font-size:18px; font-weight:600; background:linear-gradient(135deg,var(--accent),var(--pink)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:24px; }
+    .about-links { display:flex; gap:10px; justify-content:center; margin-bottom:20px; }
+    .about-link { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--bg-input); border:1px solid var(--border); color:var(--text-dim); border-radius:var(--radius-sm); font-size:13px; text-decoration:none; cursor:pointer; transition:all 0.15s; }
+    .about-link:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-glow); }
+    .about-link svg { width:14px; height:14px; }
+    .about-tech { font-size:11px; color:var(--text-muted); line-height:1.6; }
+    .about-close { margin-top:24px; }
+
+    .logo-icon-btn { cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; }
+    .logo-icon-btn:hover { transform:scale(1.08); box-shadow:0 4px 16px rgba(99,102,241,0.3); }
+
+    /* Scan modal */
+    .scan-modal { width:640px; max-height:80vh; display:flex; flex-direction:column; padding:0; overflow:hidden; }
+    .scan-top { padding:28px 28px 0; flex-shrink:0; }
+    .scan-top h2 { margin-bottom:6px; }
+    .scan-subtitle { font-size:13px; color:var(--text-dim); margin-bottom:20px; }
+    .scan-controls { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+    .scan-controls select { padding:8px 12px; border:1px solid var(--border); background:var(--bg-input); color:var(--text); border-radius:var(--radius-sm); font-size:13px; outline:none; }
+    .scan-btn-start { padding:8px 20px; background:var(--accent); color:white; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:500; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:6px; }
+    .scan-btn-start:hover { background:var(--accent-hover); }
+    .scan-btn-start:disabled { opacity:0.5; cursor:not-allowed; }
+    .scan-btn-stop { padding:8px 20px; background:var(--red-dim); color:var(--red); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-sm); font-size:13px; cursor:pointer; transition:all 0.15s; }
+    .scan-btn-stop:hover { background:rgba(239,68,68,0.25); }
+    .scan-progress { background:var(--bg-input); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:16px; }
+    .scan-progress-bar { height:3px; background:var(--border); border-radius:2px; margin-bottom:10px; overflow:hidden; }
+    .scan-progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--pink)); border-radius:2px; transition:width 0.3s; animation:scanPulse 1.5s ease-in-out infinite; }
+    @keyframes scanPulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+    .scan-stats { display:flex; gap:24px; font-size:13px; }
+    .scan-stat-val { font-weight:600; color:var(--accent); }
+    .scan-stat-val.green { color:var(--green); }
+    .scan-current-dir { font-size:11px; color:var(--text-muted); font-family:'SF Mono',Monaco,monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:8px; }
+    .scan-results-area { flex:1; overflow-y:auto; padding:0 28px 20px; min-height:0; }
+    .scan-results-area::-webkit-scrollbar { width:4px; }
+    .scan-results-area::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+    .scan-results-title { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-bottom:10px; padding-top:8px; }
+    .scan-group { display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:6px; transition:border-color 0.15s; }
+    .scan-group:hover { border-color:var(--border-hover); }
+    .scan-group-info { flex:1; min-width:0; }
+    .scan-group-path { font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .scan-group-meta { font-size:11px; color:var(--text-muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .scan-group-count { font-size:13px; font-weight:600; color:var(--accent); min-width:40px; text-align:center; }
+    .scan-group-add { padding:6px 14px; background:var(--accent-glow); color:var(--accent); border:1px solid rgba(99,102,241,0.3); border-radius:6px; font-size:12px; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+    .scan-group-add:hover { background:var(--accent); color:white; }
+    .scan-group-added { padding:6px 14px; background:var(--green-dim); color:var(--green); border:1px solid rgba(34,197,94,0.3); border-radius:6px; font-size:12px; cursor:default; white-space:nowrap; }
+    .scan-empty { text-align:center; padding:40px 20px; color:var(--text-muted); font-size:13px; }
+    .scan-footer { padding:16px 28px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; flex-shrink:0; }
+    .scan-cached-banner { display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); border-radius:var(--radius-sm); margin-bottom:16px; font-size:12px; color:var(--blue); }
+    .scan-cached-banner span { flex:1; }
   </style>
 </head>
 <body>
@@ -296,6 +354,9 @@
       <div class="welcome-suggestions" id="welcome-suggestions"></div>
     </div>
     <button class="welcome-start" id="welcome-start-btn" onclick="welcomeFinish()" disabled>Get Started</button>
+    <div style="margin-top:20px;font-size:13px;color:var(--text-muted)">
+      or <button onclick="document.getElementById('welcome-screen').classList.remove('show');openScan()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;text-decoration:underline">scan your computer</button> to find projects automatically
+    </div>
   </div>
 </div>
 
@@ -303,8 +364,11 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="logo">
-        <div class="logo-icon">D</div>
+        <div class="logo-icon logo-icon-btn" onclick="openAbout()" title="About Dev Dashboard">D</div>
         <h1>Dev Dashboard</h1>
+        <button class="settings-btn" onclick="openScan()" title="Scan for projects">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0110 10"/><line x1="12" y1="12" x2="12" y2="2"/></svg>
+        </button>
         <button class="settings-btn" onclick="openSettings()" title="Settings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         </button>
@@ -432,6 +496,74 @@
   </div>
 </div>
 
+<!-- Scan modal -->
+<div class="modal-overlay" id="scan-modal">
+  <div class="modal scan-modal">
+    <div class="scan-top">
+      <h2>Scan for Projects</h2>
+      <div class="scan-subtitle">Scan your filesystem to discover project directories automatically</div>
+      <div id="scan-cached-area"></div>
+      <div class="scan-controls">
+        <select id="scan-depth">
+          <option value="3">Depth: 3 levels</option>
+          <option value="4">Depth: 4 levels</option>
+          <option value="5" selected>Depth: 5 levels</option>
+          <option value="6">Depth: 6 levels</option>
+        </select>
+        <button class="scan-btn-start" id="scan-start-btn" onclick="startScan()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0110 10"/><line x1="12" y1="12" x2="12" y2="2"/></svg>
+          Start Scan
+        </button>
+        <button class="scan-btn-stop" id="scan-stop-btn" onclick="stopScan()" style="display:none">Stop</button>
+      </div>
+      <div class="scan-progress" id="scan-progress" style="display:none">
+        <div class="scan-progress-bar"><div class="scan-progress-fill" id="scan-progress-fill" style="width:100%"></div></div>
+        <div class="scan-stats">
+          <span><span class="scan-stat-val" id="scan-dirs-count">0</span> directories scanned</span>
+          <span><span class="scan-stat-val green" id="scan-found-count">0</span> projects found</span>
+          <span id="scan-elapsed"></span>
+        </div>
+        <div class="scan-current-dir" id="scan-current-dir"></div>
+      </div>
+    </div>
+    <div class="scan-results-area" id="scan-results-area">
+      <div class="scan-empty" id="scan-empty-state">Click "Start Scan" to discover projects on your machine</div>
+    </div>
+    <div class="scan-footer">
+      <button class="btn btn-secondary" onclick="closeScan()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- About modal -->
+<div class="modal-overlay" id="about-modal">
+  <div class="modal about-modal">
+    <div class="about-logo">D</div>
+    <div class="about-title">Dev Dashboard</div>
+    <div class="about-version">v1.0.0</div>
+    <div class="about-desc">
+      A local development project dashboard that scans your directories, auto-detects project types, and gives you quick actions to run, open, and manage everything from one place.
+    </div>
+    <div class="about-divider"></div>
+    <div class="about-made">Made with <em class="about-heart">&hearts;</em> by</div>
+    <div class="about-author">Henrik Brendhagen</div>
+    <div class="about-links">
+      <a class="about-link" href="https://github.com/henrikbrendhagen" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+      <a class="about-link" href="https://github.com/henrikbrendhagen/dev-dashboard" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Source Code
+      </a>
+    </div>
+    <div class="about-tech">Node.js &middot; Express &middot; Vanilla JS<br>No frameworks, no build step, just vibes</div>
+    <div class="about-close">
+      <button class="btn btn-secondary" onclick="closeAbout()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toasts"></div>
 
 <script>
@@ -479,6 +611,7 @@ async function init() {
 
 function startPolling() {
   setInterval(loadProcesses, 5000);
+  setInterval(loadProjects, 60000);
   setInterval(() => {
     for (const p of allProjects) {
       p.running = runningProcesses.filter(r => r.projectPath === p.path && r.alive);
@@ -486,6 +619,9 @@ function startPolling() {
     const el = document.getElementById('filter-running-count');
     if (el) el.textContent = runningProcesses.filter(r => r.alive).length;
   }, 5000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) { loadProjects(); loadProcesses(); }
+  });
 }
 
 function updateSubtitle() {
@@ -1027,6 +1163,145 @@ async function createProject() {
   if(res.ok){toast(`"${name}" created!`);closeCreateModal();loadProjects();}else{const e=await res.json();toast(e.error||'Error');}
 }
 
+// ─── Scanner ────────────────────────────────────────────────────────
+
+let scanPollTimer = null;
+
+async function openScan() {
+  document.getElementById('scan-modal').classList.add('show');
+  try {
+    const res = await fetch('/api/scan/cached');
+    const cached = await res.json();
+    const area = document.getElementById('scan-cached-area');
+    if (cached && cached.groups && cached.groups.length > 0) {
+      const ago = formatDate(new Date(cached.timestamp).toISOString());
+      area.innerHTML = `<div class="scan-cached-banner">
+        <span>Previous scan found <strong>${cached.projects.length}</strong> projects in <strong>${cached.groups.length}</strong> directories (${ago})</span>
+        <button class="scan-group-add" onclick="showCachedResults()">View results</button>
+      </div>`;
+    } else {
+      area.innerHTML = '';
+    }
+  } catch {}
+  const statusRes = await fetch('/api/scan/status').then(r => r.json()).catch(() => null);
+  if (statusRes && statusRes.running) {
+    onScanRunning();
+    pollScanStatus();
+  }
+}
+
+function closeScan() {
+  document.getElementById('scan-modal').classList.remove('show');
+  clearTimeout(scanPollTimer);
+}
+
+async function showCachedResults() {
+  try {
+    const res = await fetch('/api/scan/cached');
+    const cached = await res.json();
+    if (cached && cached.groups) renderScanGroups(cached.groups);
+  } catch {}
+}
+
+async function startScan() {
+  const maxDepth = parseInt(document.getElementById('scan-depth').value) || 5;
+  try {
+    await fetch('/api/scan/start', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ maxDepth })
+    });
+    onScanRunning();
+    pollScanStatus();
+  } catch { toast('Failed to start scan'); }
+}
+
+function onScanRunning() {
+  document.getElementById('scan-start-btn').disabled = true;
+  document.getElementById('scan-stop-btn').style.display = 'inline-block';
+  document.getElementById('scan-progress').style.display = 'block';
+  document.getElementById('scan-empty-state').style.display = 'none';
+}
+
+async function stopScan() {
+  try { await fetch('/api/scan/stop', { method: 'POST' }); } catch {}
+}
+
+async function pollScanStatus() {
+  try {
+    const res = await fetch('/api/scan/status');
+    const data = await res.json();
+
+    document.getElementById('scan-dirs-count').textContent = data.scannedDirs.toLocaleString();
+    document.getElementById('scan-found-count').textContent = data.foundCount.toLocaleString();
+    document.getElementById('scan-current-dir').textContent = data.currentDir || '';
+
+    const secs = Math.floor(data.elapsed / 1000);
+    const el = document.getElementById('scan-elapsed');
+    if (secs > 0) el.textContent = secs < 60 ? `${secs}s` : `${Math.floor(secs/60)}m ${secs%60}s`;
+
+    if (data.groups && data.groups.length > 0) {
+      renderScanGroups(data.groups);
+    }
+
+    if (data.running) {
+      scanPollTimer = setTimeout(pollScanStatus, 500);
+    } else {
+      document.getElementById('scan-start-btn').disabled = false;
+      document.getElementById('scan-stop-btn').style.display = 'none';
+      document.getElementById('scan-progress-fill').style.animation = 'none';
+      document.getElementById('scan-progress-fill').style.opacity = '1';
+      if (data.foundCount === 0) {
+        document.getElementById('scan-empty-state').style.display = 'block';
+        document.getElementById('scan-empty-state').textContent = 'No projects found. Try increasing the scan depth.';
+      }
+    }
+  } catch {}
+}
+
+function renderScanGroups(groups) {
+  const area = document.getElementById('scan-results-area');
+  if (!groups.length) return;
+
+  const minCount = 1;
+  const filtered = groups.filter(g => g.count >= minCount);
+
+  area.innerHTML = `<div class="scan-results-title">Discovered directories (${filtered.length})</div>` +
+    filtered.map(g => `<div class="scan-group">
+      <div class="scan-group-count">${g.count}</div>
+      <div class="scan-group-info">
+        <div class="scan-group-path">${esc(g.displayName)}</div>
+        <div class="scan-group-meta">${g.projects.slice(0, 5).join(', ')}${g.projects.length > 5 ? ` +${g.projects.length - 5} more` : ''}</div>
+      </div>
+      ${g.alreadyAdded
+        ? '<span class="scan-group-added">Added</span>'
+        : `<button class="scan-group-add" onclick="scanAddDir('${esc(g.directory)}', this)">Add</button>`}
+    </div>`).join('');
+}
+
+async function scanAddDir(dir, btn) {
+  try {
+    const res = await fetch('/api/settings/add-directory', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ directory: dir })
+    });
+    if (res.ok) {
+      appSettings = await res.json();
+      btn.outerHTML = '<span class="scan-group-added">Added</span>';
+      updateSubtitle();
+      loadProjects();
+      toast('Directory added');
+    } else {
+      const err = await res.json();
+      toast(err.error || 'Failed to add');
+    }
+  } catch { toast('Failed to add directory'); }
+}
+
+// ─── About ──────────────────────────────────────────────────────────
+
+function openAbout() { document.getElementById('about-modal').classList.add('show'); }
+function closeAbout() { document.getElementById('about-modal').classList.remove('show'); }
+
 // ─── Utilities ──────────────────────────────────────────────────────
 
 function toast(msg) { const el=document.createElement('div'); el.className='toast'; el.textContent=msg; document.getElementById('toasts').appendChild(el); setTimeout(()=>el.remove(),3000); }
@@ -1035,7 +1310,7 @@ function esc(s) { const d=document.createElement('div'); d.textContent=s; return
 document.getElementById('search').addEventListener('input', renderProjects);
 document.addEventListener('keydown', e => {
   if (e.key==='k'&&(e.metaKey||e.ctrlKey)){e.preventDefault();document.getElementById('search').focus();}
-  if (e.key==='Escape'){closeDetail();closeCreateModal();closeLogModal();closeSettings();}
+  if (e.key==='Escape'){closeDetail();closeCreateModal();closeLogModal();closeSettings();closeScan();closeAbout();}
   if (e.key===',' && (e.metaKey||e.ctrlKey)){e.preventDefault();openSettings();}
 });
 

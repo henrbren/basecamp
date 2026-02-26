@@ -610,6 +610,146 @@ app.delete('/api/projects/:name', (req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
+// ─── API: Scanner ─────────────────────────────────────────────────────
+
+const SCAN_CACHE_PATH = path.join(os.homedir(), '.devdashboard-scan.json');
+
+const SKIP_DIRS = new Set([
+  'node_modules', '.git', 'venv', '__pycache__', '.cache', '.npm', '.nvm',
+  '.cargo', '.rustup', '.local', '.Trash', '.gradle', '.m2', '.cocoapods',
+  'Library', 'Applications', 'Pictures', 'Music', 'Movies', 'Downloads',
+  'dist', 'build', '.next', '.expo', '.svn', 'vendor', 'target',
+  'Pods', 'DerivedData', 'xcuserdata', '.docker', '.kube', '.oh-my-zsh',
+  '.vscode', '.cursor', 'snap', '.android', '.java', 'go', '.gem',
+]);
+
+const PROJECT_INDICATORS = [
+  '.git', 'package.json', 'Cargo.toml', 'go.mod', 'pyproject.toml',
+  'setup.py', 'Gemfile', 'build.gradle', 'pom.xml', 'CMakeLists.txt',
+  'Dockerfile', 'docker-compose.yml', 'requirements.txt',
+];
+
+let scanState = {
+  running: false, scannedDirs: 0, foundProjects: [],
+  currentDir: '', startedAt: null, cancelled: false,
+};
+
+function startScan(roots, maxDepth) {
+  if (scanState.running) return false;
+  scanState = {
+    running: true, scannedDirs: 0, foundProjects: [],
+    currentDir: '', startedAt: Date.now(), cancelled: false,
+  };
+
+  const queue = roots.map(r => ({ dir: path.resolve(r.replace(/^~/, os.homedir())), depth: 0 }));
+
+  function processBatch() {
+    if (scanState.cancelled || queue.length === 0) {
+      scanState.running = false;
+      try {
+        fs.writeFileSync(SCAN_CACHE_PATH, JSON.stringify({
+          timestamp: Date.now(),
+          projects: scanState.foundProjects,
+          groups: groupScanResults(scanState.foundProjects),
+        }, null, 2));
+      } catch {}
+      return;
+    }
+
+    let processed = 0;
+    while (queue.length > 0 && processed < 200) {
+      const { dir, depth } = queue.shift();
+      processed++;
+      if (depth > maxDepth) continue;
+
+      const dirName = path.basename(dir);
+      if (SKIP_DIRS.has(dirName)) continue;
+
+      scanState.scannedDirs++;
+      scanState.currentDir = dir;
+
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        const names = entries.map(e => e.name);
+
+        const indicators = PROJECT_INDICATORS.filter(f => names.includes(f));
+        if (names.some(n => n.endsWith('.xcodeproj'))) indicators.push('.xcodeproj');
+
+        if (indicators.length > 0) {
+          scanState.foundProjects.push({
+            path: dir, name: path.basename(dir),
+            parentDir: path.dirname(dir), indicators,
+          });
+          continue;
+        }
+
+        for (const entry of entries) {
+          if (!entry.isDirectory() || entry.name.startsWith('.') || SKIP_DIRS.has(entry.name)) continue;
+          queue.push({ dir: path.join(dir, entry.name), depth: depth + 1 });
+        }
+      } catch {}
+    }
+
+    setImmediate(processBatch);
+  }
+
+  setImmediate(processBatch);
+  return true;
+}
+
+function groupScanResults(projects) {
+  const groups = {};
+  for (const p of projects) {
+    if (!groups[p.parentDir]) groups[p.parentDir] = [];
+    groups[p.parentDir].push(p);
+  }
+  const homeRe = new RegExp(`^${os.homedir().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+  return Object.entries(groups)
+    .map(([dir, projs]) => ({
+      directory: dir,
+      displayName: dir.replace(homeRe, '~'),
+      count: projs.length,
+      projects: projs.map(p => p.name).sort(),
+      alreadyAdded: config.projectDirectories.includes(dir),
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
+app.post('/api/scan/start', (req, res) => {
+  const roots = req.body.roots || [os.homedir()];
+  const maxDepth = Math.min(parseInt(req.body.maxDepth) || 5, 8);
+  const started = startScan(roots, maxDepth);
+  res.json({ started, alreadyRunning: !started });
+});
+
+app.get('/api/scan/status', (req, res) => {
+  const homeRe = new RegExp(`^${os.homedir().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+  res.json({
+    running: scanState.running,
+    scannedDirs: scanState.scannedDirs,
+    foundCount: scanState.foundProjects.length,
+    currentDir: scanState.currentDir.replace(homeRe, '~'),
+    elapsed: scanState.startedAt ? Date.now() - scanState.startedAt : 0,
+    groups: groupScanResults(scanState.foundProjects).slice(0, 100),
+  });
+});
+
+app.post('/api/scan/stop', (req, res) => {
+  scanState.cancelled = true;
+  res.json({ ok: true });
+});
+
+app.get('/api/scan/cached', (req, res) => {
+  try {
+    const data = JSON.parse(fs.readFileSync(SCAN_CACHE_PATH, 'utf8'));
+    data.groups = data.groups.map(g => ({
+      ...g,
+      alreadyAdded: config.projectDirectories.includes(g.directory),
+    }));
+    res.json(data);
+  } catch { res.json(null); }
+});
+
 // ─── Start ────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
