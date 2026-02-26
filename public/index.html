@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0f; --bg-card: #12121a; --bg-card-hover: #1a1a26;
+      --bg-sidebar: #0e0e16; --bg-input: #16161f;
+      --border: #1e1e2e; --border-hover: #2a2a3e;
+      --text: #e2e2ef; --text-dim: #6b6b80; --text-muted: #4a4a5e;
+      --accent: #6366f1; --accent-glow: rgba(99,102,241,0.15); --accent-hover: #818cf8;
+      --green: #22c55e; --green-dim: rgba(34,197,94,0.15);
+      --orange: #f59e0b; --orange-dim: rgba(245,158,11,0.15);
+      --red: #ef4444; --red-dim: rgba(239,68,68,0.15);
+      --blue: #3b82f6; --blue-dim: rgba(59,130,246,0.15);
+      --cyan: #06b6d4; --pink: #ec4899;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif; background:var(--bg); color:var(--text); overflow:hidden; height:100vh; }
+    .app { display:grid; grid-template-columns:260px 1fr; height:100vh; }
+
+    /* Sidebar */
+    .sidebar { background:var(--bg-sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+    .sidebar-header { padding:24px 20px 16px; border-bottom:1px solid var(--border); }
+    .logo { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+    .logo-icon { width:32px; height:32px; background:linear-gradient(135deg,var(--accent),var(--pink)); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:white; }
+    .logo h1 { font-size:17px; font-weight:700; letter-spacing:-0.3px; flex:1; }
+    .settings-btn { background:none; border:none; color:var(--text-muted); cursor:pointer; padding:4px; border-radius:6px; transition:all 0.15s; display:flex; align-items:center; }
+    .settings-btn:hover { color:var(--text); background:var(--bg-input); }
+    .logo-sub { font-size:11px; color:var(--text-dim); margin-top:2px; padding-left:42px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sidebar-stats { padding:16px 20px; display:grid; grid-template-columns:1fr 1fr; gap:8px; border-bottom:1px solid var(--border); }
+    .stat-box { background:var(--bg-input); border-radius:var(--radius-sm); padding:10px 12px; text-align:center; }
+    .stat-num { font-size:20px; font-weight:700; color:var(--accent); }
+    .stat-label { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+    .sidebar-filters { padding:16px 20px; flex:1; overflow-y:auto; }
+    .sidebar-filters::-webkit-scrollbar { width:4px; }
+    .sidebar-filters::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+    .filter-section-title { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:8px; margin-top:16px; }
+    .filter-section-title:first-child { margin-top:0; }
+    .filter-btn { width:100%; display:flex; align-items:center; gap:8px; padding:7px 10px; border:none; background:transparent; color:var(--text-dim); font-size:13px; border-radius:6px; cursor:pointer; transition:all 0.15s; text-align:left; }
+    .filter-btn:hover { background:var(--bg-input); color:var(--text); }
+    .filter-btn.active { background:var(--accent-glow); color:var(--accent); }
+    .filter-btn .count { margin-left:auto; font-size:11px; color:var(--text-muted); background:var(--bg); padding:1px 6px; border-radius:10px; min-width:22px; text-align:center; }
+    .filter-btn.active .count { color:var(--accent); background:rgba(99,102,241,0.1); }
+
+    .sidebar-running { padding:12px 20px; border-top:1px solid var(--border); }
+    .running-header { display:flex; align-items:center; gap:6px; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--green); margin-bottom:8px; cursor:pointer; }
+    .running-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .running-item { display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px; font-size:12px; color:var(--text-dim); cursor:pointer; transition:background 0.15s; margin-bottom:2px; }
+    .running-item:hover { background:var(--bg-input); }
+    .running-item .ri-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .running-item .ri-port { color:var(--green); font-family:'SF Mono',Monaco,monospace; font-size:11px; }
+    .running-stop { border:none; background:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:0 2px; }
+    .running-stop:hover { color:var(--red); }
+
+    .sidebar-actions { padding:16px 20px; border-top:1px solid var(--border); }
+    .btn-create { width:100%; padding:10px; border:1px dashed var(--border); background:transparent; color:var(--text-dim); border-radius:var(--radius-sm); font-size:13px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:6px; }
+    .btn-create:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-glow); }
+
+    /* Main */
+    .main { display:flex; flex-direction:column; overflow:hidden; }
+    .topbar { padding:16px 28px; display:flex; align-items:center; gap:16px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .search-box { flex:1; position:relative; }
+    .search-box svg { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); width:16px; height:16px; }
+    .search-box input { width:100%; padding:10px 14px 10px 40px; border:1px solid var(--border); background:var(--bg-input); color:var(--text); border-radius:var(--radius); font-size:14px; outline:none; transition:border-color 0.2s; }
+    .search-box input::placeholder { color:var(--text-muted); }
+    .search-box input:focus { border-color:var(--accent); }
+    .view-toggles { display:flex; gap:4px; background:var(--bg-input); padding:3px; border-radius:var(--radius-sm); }
+    .view-toggle { padding:6px 10px; border:none; background:transparent; color:var(--text-muted); border-radius:6px; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; }
+    .view-toggle.active { background:var(--bg-card); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+    .view-toggle svg { width:16px; height:16px; }
+    .sort-select { padding:8px 12px; border:1px solid var(--border); background:var(--bg-input); color:var(--text); border-radius:var(--radius-sm); font-size:13px; outline:none; cursor:pointer; }
+    .sort-select option { background:var(--bg-card); }
+
+    /* Content */
+    .content { flex:1; overflow-y:auto; padding:24px 28px; }
+    .content::-webkit-scrollbar { width:6px; }
+    .content::-webkit-scrollbar-track { background:transparent; }
+    .content::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+    .results-info { font-size:12px; color:var(--text-muted); margin-bottom:16px; }
+
+    /* Grid */
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+    .card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:18px; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden; }
+    .card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--accent),var(--pink)); opacity:0; transition:opacity 0.2s; }
+    .card:hover { border-color:var(--border-hover); background:var(--bg-card-hover); transform:translateY(-1px); box-shadow:var(--shadow); }
+    .card:hover::before { opacity:1; }
+    .card.is-running { border-color: rgba(34,197,94,0.3); }
+    .card.is-running::before { background:var(--green); opacity:1; }
+    .card-header { display:flex; align-items:flex-start; gap:12px; margin-bottom:10px; }
+    .card-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+    .card-title { font-size:14px; font-weight:600; line-height:1.3; word-break:break-word; }
+    .card-types { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+    .type-badge { font-size:10px; padding:2px 7px; border-radius:4px; font-weight:500; text-transform:uppercase; letter-spacing:0.3px; }
+    .card-desc { font-size:12px; color:var(--text-dim); margin-bottom:10px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .card-meta { display:flex; align-items:center; gap:12px; font-size:11px; color:var(--text-muted); flex-wrap:wrap; }
+    .git-badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 8px; border-radius:4px; }
+    .git-badge.clean { background:var(--green-dim); color:var(--green); }
+    .git-badge.dirty { background:var(--orange-dim); color:var(--orange); }
+    .git-badge.no-git { background:var(--bg-input); color:var(--text-muted); }
+    .running-badge { background:var(--green-dim); color:var(--green); font-size:11px; padding:2px 8px; border-radius:4px; display:inline-flex; align-items:center; gap:4px; }
+    .running-badge .rb-dot { width:5px; height:5px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+    .card-actions { display:flex; gap:6px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); opacity:0; transition:opacity 0.2s; flex-wrap:wrap; }
+    .card:hover .card-actions { opacity:1; }
+    .card-action-btn { padding:6px 10px; border:1px solid var(--border); background:var(--bg-input); color:var(--text-dim); border-radius:6px; font-size:11px; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:4px; white-space:nowrap; }
+    .card-action-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-glow); }
+    .card-action-btn.run-btn { border-color:rgba(34,197,94,0.3); color:var(--green); }
+    .card-action-btn.run-btn:hover { background:var(--green-dim); border-color:var(--green); }
+    .card-action-btn.stop-btn { border-color:rgba(239,68,68,0.3); color:var(--red); }
+    .card-action-btn.stop-btn:hover { background:var(--red-dim); border-color:var(--red); }
+    .card-action-btn.preview-btn { border-color:rgba(59,130,246,0.3); color:var(--blue); }
+    .card-action-btn.preview-btn:hover { background:var(--blue-dim); border-color:var(--blue); }
+
+    /* List */
+    .list { display:flex; flex-direction:column; gap:4px; }
+    .list-item { display:grid; grid-template-columns:32px 1fr 140px 100px 90px 200px; gap:14px; align-items:center; padding:10px 16px; background:var(--bg-card); border:1px solid transparent; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.15s; font-size:13px; }
+    .list-item:hover { background:var(--bg-card-hover); border-color:var(--border); }
+    .list-item .item-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; }
+    .list-item .item-name { font-weight:500; }
+    .list-item .item-types { display:flex; gap:4px; flex-wrap:wrap; }
+    .list-item .item-git { font-size:12px; }
+    .list-item .item-date { font-size:12px; color:var(--text-dim); }
+    .list-item .item-actions { display:flex; gap:4px; justify-content:flex-end; }
+    .list-action-btn { padding:5px 8px; border:1px solid var(--border); background:transparent; color:var(--text-muted); border-radius:5px; font-size:11px; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+    .list-action-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .list-action-btn.run-btn { color:var(--green); border-color:rgba(34,197,94,0.3); }
+    .list-action-btn.run-btn:hover { background:var(--green-dim); }
+
+    /* Modal */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:100; align-items:center; justify-content:center; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; width:480px; max-height:85vh; overflow:auto; padding:28px; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+    .modal h2 { font-size:18px; margin-bottom:20px; }
+    .form-group { margin-bottom:16px; }
+    .form-group label { display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+    .form-group input,.form-group select { width:100%; padding:10px 14px; border:1px solid var(--border); background:var(--bg-input); color:var(--text); border-radius:var(--radius-sm); font-size:14px; outline:none; }
+    .form-group input:focus,.form-group select:focus { border-color:var(--accent); }
+    .form-check { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+    .form-check input[type="checkbox"] { accent-color:var(--accent); width:16px; height:16px; }
+    .form-check label { font-size:13px; color:var(--text-dim); }
+    .modal-actions { display:flex; gap:10px; margin-top:24px; }
+    .btn { padding:10px 20px; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:500; cursor:pointer; transition:all 0.2s; }
+    .btn-primary { background:var(--accent); color:white; flex:1; }
+    .btn-primary:hover { background:var(--accent-hover); }
+    .btn-secondary { background:var(--bg-input); color:var(--text-dim); border:1px solid var(--border); }
+    .btn-secondary:hover { color:var(--text); border-color:var(--border-hover); }
+
+    /* Detail panel */
+    .detail-panel { display:none; position:fixed; top:0; right:0; width:440px; height:100vh; background:var(--bg-sidebar); border-left:1px solid var(--border); z-index:50; flex-direction:column; box-shadow:-10px 0 40px rgba(0,0,0,0.3); }
+    .detail-panel.show { display:flex; }
+    .detail-header { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .detail-close { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:20px; padding:4px; }
+    .detail-close:hover { color:var(--text); }
+    .detail-scroll { flex:1; overflow-y:auto; }
+    .detail-scroll::-webkit-scrollbar { width:4px; }
+    .detail-scroll::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+    .detail-body { padding:24px; }
+    .detail-body h2 { font-size:20px; margin-bottom:6px; }
+    .detail-path { font-size:12px; color:var(--text-muted); margin-bottom:16px; word-break:break-all; font-family:'SF Mono',Monaco,monospace; }
+    .detail-badges { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
+    .detail-section { margin-bottom:20px; }
+    .detail-section h3 { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-bottom:10px; }
+    .detail-info-box { background:var(--bg-input); border-radius:var(--radius-sm); padding:12px; font-size:13px; }
+    .detail-row { display:flex; justify-content:space-between; padding:4px 0; }
+    .detail-row span:first-child { color:var(--text-dim); }
+    .detail-files { display:flex; flex-wrap:wrap; gap:4px; }
+    .detail-file { font-size:11px; padding:3px 8px; background:var(--bg-input); border-radius:4px; color:var(--text-dim); font-family:'SF Mono',Monaco,monospace; }
+    .detail-actions-section { padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0; }
+    .action-group { margin-bottom:12px; }
+    .action-group-title { font-size:10px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-bottom:6px; }
+    .detail-action-btn { width:100%; padding:9px 12px; border:1px solid var(--border); background:var(--bg-input); color:var(--text); border-radius:var(--radius-sm); font-size:13px; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+    .detail-action-btn:hover { border-color:var(--accent); background:var(--accent-glow); }
+    .detail-action-btn.run-action { border-color:rgba(34,197,94,0.3); }
+    .detail-action-btn.run-action:hover { border-color:var(--green); background:var(--green-dim); }
+    .detail-action-btn.setup-action { border-color:rgba(245,158,11,0.3); }
+    .detail-action-btn.setup-action:hover { border-color:var(--orange); background:var(--orange-dim); }
+    .detail-action-btn.preview-action { border-color:rgba(59,130,246,0.3); }
+    .detail-action-btn.preview-action:hover { border-color:var(--blue); background:var(--blue-dim); }
+
+    /* Log viewer modal */
+    .log-viewer { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); width:700px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+    .log-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .log-header h3 { font-size:14px; }
+    .log-header-meta { display:flex; align-items:center; gap:12px; }
+    .log-port { font-size:12px; color:var(--green); font-family:'SF Mono',Monaco,monospace; cursor:pointer; padding:3px 8px; border-radius:4px; background:var(--green-dim); }
+    .log-port:hover { background:rgba(34,197,94,0.25); }
+    .log-body { flex:1; overflow-y:auto; padding:12px 16px; font-family:'SF Mono',Monaco,monospace; font-size:12px; line-height:1.6; min-height:300px; }
+    .log-body::-webkit-scrollbar { width:6px; }
+    .log-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+    .log-line { white-space:pre-wrap; word-break:break-all; }
+    .log-line.stderr { color:var(--orange); }
+    .log-line.system { color:var(--text-muted); font-style:italic; }
+    .log-line.stdout { color:var(--text-dim); }
+    .log-footer { padding:12px 20px; border-top:1px solid var(--border); display:flex; gap:8px; flex-shrink:0; }
+    .log-footer .btn { font-size:12px; padding:7px 14px; }
+
+    /* Toast */
+    .toast-container { position:fixed; bottom:24px; right:24px; z-index:200; display:flex; flex-direction:column; gap:8px; }
+    .toast { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 20px; font-size:13px; box-shadow:var(--shadow); animation:slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+    .loading { display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-dim); font-size:14px; }
+    .spinner { width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.6s linear infinite; margin-right:10px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Type colors */
+    .type-expo{background:#1a1a3e;color:#a78bfa}.type-nextjs{background:#1a1a1a;color:#fff}.type-react{background:#0d2a3e;color:#61dafb}
+    .type-vue{background:#1a2e1a;color:#42b883}.type-express{background:#1a1a1a;color:#aaa}.type-node{background:#1a2e1a;color:#68a063}
+    .type-python{background:#2a2a1a;color:#ffd43b}.type-html{background:#2e1a0d;color:#e34c26}.type-web{background:#2e1a0d;color:#e34c26}
+    .type-typescript{background:#0d1a3e;color:#3178c6}.type-ios,.type-xcode{background:#0d1a3e;color:#007aff}
+    .type-php{background:#1a1a3e;color:#8892bf}.type-docker{background:#0d2a3e;color:#2496ed}
+    .type-ruby{background:#2e0d0d;color:#cc342d}.type-cordova{background:#1a1a1a;color:#4cc2a4}
+    .type-vite{background:#2e1a3e;color:#bd34fe}.type-shell{background:#1a1a1a;color:#89e051}
+    .type-makefile{background:#1a1a1a;color:#888}.type-other{background:var(--bg-input);color:var(--text-muted)}
+    .type-electron{background:#0d2a3e;color:#47848f}.type-svelte{background:#2e1a0d;color:#ff3e00}
+    .type-go{background:#0d2e3e;color:#00add8}.type-rust{background:#2e1a0d;color:#dea584}
+
+    .icon-expo{background:linear-gradient(135deg,#4630eb,#a78bfa)}.icon-nextjs{background:#000}
+    .icon-react{background:linear-gradient(135deg,#0d6efd,#61dafb)}.icon-express,.icon-node{background:linear-gradient(135deg,#215732,#68a063)}
+    .icon-python{background:linear-gradient(135deg,#306998,#ffd43b)}.icon-html,.icon-web{background:linear-gradient(135deg,#e34c26,#f06529)}
+    .icon-typescript{background:linear-gradient(135deg,#235a97,#3178c6)}.icon-ios,.icon-xcode{background:linear-gradient(135deg,#007aff,#5ac8fa)}
+    .icon-php{background:linear-gradient(135deg,#4f5b93,#8892bf)}.icon-docker{background:linear-gradient(135deg,#1d63ed,#2496ed)}
+    .icon-ruby{background:linear-gradient(135deg,#a01c2d,#cc342d)}.icon-cordova{background:linear-gradient(135deg,#2e8b57,#4cc2a4)}
+    .icon-vite{background:linear-gradient(135deg,#41d1ff,#bd34fe)}.icon-shell{background:linear-gradient(135deg,#333,#89e051)}
+    .icon-other{background:var(--border)}.icon-electron{background:linear-gradient(135deg,#1b535e,#47848f)}.icon-svelte{background:linear-gradient(135deg,#ff3e00,#f96743)}
+    .icon-go{background:linear-gradient(135deg,#007d9c,#00add8)}.icon-rust{background:linear-gradient(135deg,#8b4513,#dea584)}
+    .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; color:var(--text-muted); }
+    .empty-state svg { width:48px; height:48px; margin-bottom:12px; opacity:0.5; }
+
+    /* Welcome screen */
+    .welcome-overlay { display:none; position:fixed; inset:0; background:var(--bg); z-index:300; align-items:center; justify-content:center; flex-direction:column; }
+    .welcome-overlay.show { display:flex; }
+    .welcome-box { max-width:560px; width:100%; padding:48px; text-align:center; }
+    .welcome-logo { width:64px; height:64px; background:linear-gradient(135deg,var(--accent),var(--pink)); border-radius:16px; display:inline-flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; color:white; margin-bottom:24px; }
+    .welcome-box h1 { font-size:28px; font-weight:700; margin-bottom:8px; }
+    .welcome-box p { color:var(--text-dim); font-size:15px; margin-bottom:32px; line-height:1.6; }
+    .welcome-dirs { text-align:left; margin-bottom:24px; }
+    .welcome-dir-input { display:flex; gap:8px; margin-bottom:12px; }
+    .welcome-dir-input input { flex:1; padding:12px 16px; border:1px solid var(--border); background:var(--bg-input); color:var(--text); border-radius:var(--radius-sm); font-size:14px; outline:none; }
+    .welcome-dir-input input:focus { border-color:var(--accent); }
+    .welcome-dir-input button { padding:12px 20px; background:var(--bg-input); border:1px solid var(--border); color:var(--text); border-radius:var(--radius-sm); cursor:pointer; font-size:14px; transition:all 0.15s; white-space:nowrap; }
+    .welcome-dir-input button:hover { border-color:var(--accent); color:var(--accent); }
+    .welcome-dir-list { margin-bottom:16px; }
+    .welcome-dir-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:6px; font-size:13px; font-family:'SF Mono',Monaco,monospace; }
+    .welcome-dir-item button { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px; padding:0 4px; }
+    .welcome-dir-item button:hover { color:var(--red); }
+    .welcome-suggestions { margin-bottom:20px; }
+    .welcome-suggestions p { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; text-align:left; }
+    .suggestion-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:var(--bg-input); border:1px solid var(--border); color:var(--text-dim); border-radius:var(--radius-sm); cursor:pointer; font-size:13px; transition:all 0.15s; margin:0 6px 6px 0; }
+    .suggestion-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-glow); }
+    .suggestion-btn .sg-count { font-size:11px; color:var(--text-muted); }
+    .welcome-start { padding:14px 40px; background:var(--accent); color:white; border:none; border-radius:var(--radius-sm); font-size:15px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .welcome-start:hover { background:var(--accent-hover); transform:translateY(-1px); }
+    .welcome-start:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+    /* Settings modal */
+    .settings-modal { width:560px; }
+    .settings-section { margin-bottom:24px; }
+    .settings-section h3 { font-size:12px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); margin-bottom:12px; }
+    .dir-list { margin-bottom:12px; }
+    .dir-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:6px; }
+    .dir-item-path { font-size:13px; font-family:'SF Mono',Monaco,monospace; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; margin-right:12px; }
+    .dir-item-remove { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px; padding:2px 6px; border-radius:4px; transition:all 0.15s; }
+    .dir-item-remove:hover { color:var(--red); background:var(--red-dim); }
+    .dir-add-row { display:flex; gap:8px; }
+    .dir-add-row input { flex:1; padding:10px 14px; border:1px solid var(--border); background:var(--bg-input); color:var(--text); border-radius:var(--radius-sm); font-size:13px; outline:none; }
+    .dir-add-row input:focus { border-color:var(--accent); }
+    .dir-add-row button { padding:10px 16px; background:var(--bg-input); border:1px solid var(--border); color:var(--text); border-radius:var(--radius-sm); cursor:pointer; font-size:13px; transition:all 0.15s; }
+    .dir-add-row button:hover { border-color:var(--accent); color:var(--accent); }
+    .settings-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .settings-row label { font-size:13px; color:var(--text-dim); min-width:80px; }
+    .settings-row select, .settings-row input[type="number"] { padding:8px 12px; border:1px solid var(--border); background:var(--bg-input); color:var(--text); border-radius:var(--radius-sm); font-size:13px; outline:none; }
+    .settings-row select { min-width:160px; }
+    .settings-row input[type="number"] { width:100px; }
+    .settings-note { font-size:11px; color:var(--text-muted); margin-top:8px; }
+  </style>
+</head>
+<body>
+
+<!-- Welcome screen (first run) -->
+<div class="welcome-overlay" id="welcome-screen">
+  <div class="welcome-box">
+    <div class="welcome-logo">D</div>
+    <h1>Welcome to Dev Dashboard</h1>
+    <p>Add the directories where your projects are stored to get started. Each directory will be scanned for project folders.</p>
+    <div class="welcome-dirs">
+      <div class="welcome-dir-input">
+        <input type="text" id="welcome-dir-input" placeholder="~/Projects or /full/path/to/projects">
+        <button onclick="welcomeAddDir()">Add</button>
+      </div>
+      <div class="welcome-dir-list" id="welcome-dir-list"></div>
+      <div class="welcome-suggestions" id="welcome-suggestions"></div>
+    </div>
+    <button class="welcome-start" id="welcome-start-btn" onclick="welcomeFinish()" disabled>Get Started</button>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">D</div>
+        <h1>Dev Dashboard</h1>
+        <button class="settings-btn" onclick="openSettings()" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
+      </div>
+      <div class="logo-sub" id="logo-sub"></div>
+    </div>
+    <div class="sidebar-stats">
+      <div class="stat-box"><div class="stat-num" id="stat-total">-</div><div class="stat-label">Projects</div></div>
+      <div class="stat-box"><div class="stat-num" id="stat-git">-</div><div class="stat-label">With Git</div></div>
+      <div class="stat-box"><div class="stat-num" id="stat-types">-</div><div class="stat-label">Technologies</div></div>
+      <div class="stat-box"><div class="stat-num" id="stat-running" style="color:var(--green)">0</div><div class="stat-label">Running</div></div>
+    </div>
+    <div class="sidebar-filters" id="filters"></div>
+    <div class="sidebar-running" id="sidebar-running" style="display:none"></div>
+    <div class="sidebar-actions">
+      <button class="btn-create" onclick="openCreateModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New project
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search" placeholder="Search projects... (Cmd+K)" autocomplete="off">
+      </div>
+      <div class="view-toggles">
+        <button class="view-toggle active" onclick="setView('grid')" id="view-grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+        <button class="view-toggle" onclick="setView('list')" id="view-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+      </div>
+      <select class="sort-select" id="sort" onchange="renderProjects()">
+        <option value="modified">Last modified</option>
+        <option value="name">Name A-Z</option>
+        <option value="name-desc">Name Z-A</option>
+        <option value="created">Created</option>
+        <option value="running">Running first</option>
+      </select>
+    </div>
+    <div class="content" id="content"><div class="loading"><div class="spinner"></div>Loading projects...</div></div>
+  </main>
+</div>
+
+<!-- Detail panel -->
+<div class="detail-panel" id="detail-panel">
+  <div class="detail-header"><span style="font-weight:600">Details</span><button class="detail-close" onclick="closeDetail()">&times;</button></div>
+  <div class="detail-scroll"><div class="detail-body" id="detail-body"></div></div>
+  <div class="detail-actions-section" id="detail-actions"></div>
+</div>
+
+<!-- Create modal -->
+<div class="modal-overlay" id="create-modal">
+  <div class="modal">
+    <h2>New Project</h2>
+    <div class="form-group"><label>Project name</label><input type="text" id="new-name" placeholder="my-project"></div>
+    <div class="form-group" id="create-dir-group" style="display:none"><label>Location</label><select id="new-location"></select></div>
+    <div class="form-group"><label>Template</label>
+      <select id="new-template">
+        <option value="">Empty folder</option>
+        <option value="html">HTML / CSS / JS</option>
+        <option value="node">Node.js</option>
+        <option value="python">Python</option>
+      </select>
+    </div>
+    <div class="form-check"><input type="checkbox" id="new-git" checked><label for="new-git">Initialize Git</label></div>
+    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button><button class="btn btn-primary" onclick="createProject()">Create</button></div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal settings-modal">
+    <h2>Settings</h2>
+    <div class="settings-section">
+      <h3>Project Directories</h3>
+      <div class="dir-list" id="settings-dir-list"></div>
+      <div class="dir-add-row">
+        <input type="text" id="settings-dir-input" placeholder="~/Projects or /full/path">
+        <button onclick="settingsAddDir()">Add</button>
+      </div>
+      <div class="settings-note">Add directories that contain your project folders</div>
+    </div>
+    <div class="settings-section">
+      <h3>General</h3>
+      <div class="settings-row">
+        <label>Editor</label>
+        <select id="settings-editor" onchange="settingsChanged()">
+          <option value="cursor">Cursor</option>
+          <option value="vscode">VS Code</option>
+          <option value="zed">Zed</option>
+          <option value="sublime">Sublime Text</option>
+          <option value="webstorm">WebStorm</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label>Port</label>
+        <input type="number" id="settings-port" min="1024" max="65535" onchange="settingsChanged()">
+        <span style="font-size:11px;color:var(--text-muted)">Requires restart</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeSettings()">Close</button>
+      <button class="btn btn-primary" id="settings-save-btn" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log viewer modal -->
+<div class="modal-overlay" id="log-modal">
+  <div class="log-viewer">
+    <div class="log-header">
+      <h3 id="log-title">Process Log</h3>
+      <div class="log-header-meta">
+        <span id="log-port-badge" class="log-port" style="display:none" onclick="openPort()"></span>
+        <button class="detail-close" onclick="closeLogModal()">&times;</button>
+      </div>
+    </div>
+    <div class="log-body" id="log-body"></div>
+    <div class="log-footer">
+      <button class="btn btn-secondary" onclick="closeLogModal()">Close</button>
+      <button class="btn btn-primary" id="log-open-btn" style="display:none;background:var(--green)" onclick="openPort()">Open in browser</button>
+      <button class="btn btn-secondary" id="log-stop-btn" style="border-color:var(--red);color:var(--red)" onclick="stopFromLog()">Stop</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+const ICONS = {expo:'&#9650;',nextjs:'N',react:'&#9883;',vue:'V',express:'Ex',node:'JS',python:'Py',
+  html:'&lt;/&gt;',web:'&lt;/&gt;',typescript:'TS',ios:'&#63743;',xcode:'&#63743;',php:'PHP',docker:'&#128051;',
+  ruby:'Rb',cordova:'C',vite:'&#9889;',shell:'$',makefile:'M',other:'?',svelte:'S',electron:'E',
+  go:'Go',rust:'Rs'};
+
+const SVGI = {
+  play:'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+  stop:'<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>',
+  zap:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+  folder:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
+  terminal:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
+  globe:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>',
+  download:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+  eye:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  'package':'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4l-9-5.19M21 16V8l-9-5.19L3 8v8l9 5.19L21 16z"/></svg>',
+  check:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+  phone:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/></svg>',
+  code:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+};
+
+let allProjects = [], currentFilter = 'all', currentView = 'grid', selectedProject = null;
+let runningProcesses = [], currentLogId = null, logPollTimer = null;
+let appSettings = {};
+
+// ─── Init ───────────────────────────────────────────────────────────
+
+async function init() {
+  try {
+    const res = await fetch('/api/settings');
+    appSettings = await res.json();
+  } catch { appSettings = { projectDirectories: [], editor: 'cursor', port: 4200 }; }
+
+  if (!appSettings.projectDirectories || appSettings.projectDirectories.length === 0) {
+    showWelcomeScreen();
+  } else {
+    updateSubtitle();
+    loadProjects();
+    loadProcesses();
+    startPolling();
+  }
+}
+
+function startPolling() {
+  setInterval(loadProcesses, 5000);
+  setInterval(() => {
+    for (const p of allProjects) {
+      p.running = runningProcesses.filter(r => r.projectPath === p.path && r.alive);
+    }
+    const el = document.getElementById('filter-running-count');
+    if (el) el.textContent = runningProcesses.filter(r => r.alive).length;
+  }, 5000);
+}
+
+function updateSubtitle() {
+  const dirs = appSettings.projectDirectories || [];
+  const el = document.getElementById('logo-sub');
+  if (dirs.length === 0) el.textContent = 'No directories configured';
+  else if (dirs.length === 1) el.textContent = dirs[0].replace(/^\/Users\/[^/]+/, '~');
+  else el.textContent = `${dirs.length} directories`;
+  el.title = dirs.join('\n');
+}
+
+// ─── Welcome Screen ─────────────────────────────────────────────────
+
+let welcomeDirs = [];
+
+async function showWelcomeScreen() {
+  document.getElementById('welcome-screen').classList.add('show');
+  try {
+    const res = await fetch('/api/settings/suggest-directories');
+    const suggestions = await res.json();
+    const container = document.getElementById('welcome-suggestions');
+    if (suggestions.length) {
+      container.innerHTML = `<p>Detected directories</p>${suggestions.map(s =>
+        `<button class="suggestion-btn" onclick="welcomeAddSuggestion('${esc(s.path)}')">${esc(s.name)} <span class="sg-count">${s.count} folders</span></button>`
+      ).join('')}`;
+    }
+  } catch {}
+}
+
+function welcomeAddDir() {
+  const input = document.getElementById('welcome-dir-input');
+  const dir = input.value.trim();
+  if (!dir) return;
+  if (welcomeDirs.includes(dir)) { input.value = ''; return; }
+  welcomeDirs.push(dir);
+  input.value = '';
+  renderWelcomeDirs();
+}
+
+function welcomeAddSuggestion(dir) {
+  if (welcomeDirs.includes(dir)) return;
+  welcomeDirs.push(dir);
+  renderWelcomeDirs();
+}
+
+function welcomeRemoveDir(dir) {
+  welcomeDirs = welcomeDirs.filter(d => d !== dir);
+  renderWelcomeDirs();
+}
+
+function renderWelcomeDirs() {
+  const container = document.getElementById('welcome-dir-list');
+  container.innerHTML = welcomeDirs.map(d =>
+    `<div class="welcome-dir-item"><span>${esc(d)}</span><button onclick="welcomeRemoveDir('${esc(d)}')">&times;</button></div>`
+  ).join('');
+  document.getElementById('welcome-start-btn').disabled = welcomeDirs.length === 0;
+}
+
+async function welcomeFinish() {
+  const btn = document.getElementById('welcome-start-btn');
+  btn.disabled = true;
+  btn.textContent = 'Setting up...';
+
+  for (const dir of welcomeDirs) {
+    try {
+      await fetch('/api/settings/add-directory', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ directory: dir })
+      });
+    } catch {}
+  }
+
+  try {
+    const res = await fetch('/api/settings');
+    appSettings = await res.json();
+  } catch {}
+
+  document.getElementById('welcome-screen').classList.remove('show');
+  updateSubtitle();
+  loadProjects();
+  loadProcesses();
+  startPolling();
+}
+
+// ─── Settings ───────────────────────────────────────────────────────
+
+function openSettings() {
+  renderSettingsDirs();
+  document.getElementById('settings-editor').value = appSettings.editor || 'cursor';
+  document.getElementById('settings-port').value = appSettings.port || 4200;
+  document.getElementById('settings-modal').classList.add('show');
+}
+
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('show');
+}
+
+function renderSettingsDirs() {
+  const container = document.getElementById('settings-dir-list');
+  const dirs = appSettings.projectDirectories || [];
+  container.innerHTML = dirs.length ? dirs.map(d =>
+    `<div class="dir-item"><span class="dir-item-path" title="${esc(d)}">${esc(d)}</span><button class="dir-item-remove" onclick="settingsRemoveDir('${esc(d)}')">&times;</button></div>`
+  ).join('') : '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No directories added yet</div>';
+}
+
+async function settingsAddDir() {
+  const input = document.getElementById('settings-dir-input');
+  const dir = input.value.trim();
+  if (!dir) return;
+  try {
+    const res = await fetch('/api/settings/add-directory', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ directory: dir })
+    });
+    if (res.ok) {
+      appSettings = await res.json();
+      input.value = '';
+      renderSettingsDirs();
+      updateSubtitle();
+      loadProjects();
+      toast('Directory added');
+    } else {
+      const err = await res.json();
+      toast(err.error || 'Failed to add directory');
+    }
+  } catch { toast('Failed to add directory'); }
+}
+
+async function settingsRemoveDir(dir) {
+  try {
+    const res = await fetch('/api/settings/remove-directory', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ directory: dir })
+    });
+    if (res.ok) {
+      appSettings = await res.json();
+      renderSettingsDirs();
+      updateSubtitle();
+      loadProjects();
+      toast('Directory removed');
+    }
+  } catch {}
+}
+
+function settingsChanged() {}
+
+async function saveSettings() {
+  const editor = document.getElementById('settings-editor').value;
+  const port = parseInt(document.getElementById('settings-port').value) || 4200;
+  try {
+    const res = await fetch('/api/settings', {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ editor, port })
+    });
+    if (res.ok) {
+      appSettings = await res.json();
+      toast('Settings saved');
+      closeSettings();
+    }
+  } catch { toast('Failed to save settings'); }
+}
+
+// ─── Projects ───────────────────────────────────────────────────────
+
+async function loadProjects() {
+  try {
+    const res = await fetch('/api/projects');
+    allProjects = await res.json();
+    updateStats(); buildFilters(); renderProjects();
+  } catch { document.getElementById('content').innerHTML = '<div class="empty-state"><p>Could not load projects</p></div>'; }
+}
+
+async function loadProcesses() {
+  try {
+    const res = await fetch('/api/processes');
+    runningProcesses = await res.json();
+    updateRunningUI();
+  } catch {}
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = allProjects.length;
+  document.getElementById('stat-git').textContent = allProjects.filter(p => p.git).length;
+  const t = new Set(); allProjects.forEach(p => p.types.forEach(x => t.add(x)));
+  document.getElementById('stat-types').textContent = t.size;
+}
+
+function updateRunningUI() {
+  const alive = runningProcesses.filter(p => p.alive);
+  document.getElementById('stat-running').textContent = alive.length;
+  const el = document.getElementById('sidebar-running');
+  if (!alive.length) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="running-header" onclick="setFilter('running')"><div class="running-dot"></div> ${alive.length} running</div>
+    ${alive.map(p => `
+      <div class="running-item" onclick="showLogs(${p.id})">
+        <span class="ri-name">${esc(p.projectName)}</span>
+        ${p.port ? `<span class="ri-port" onclick="event.stopPropagation();openUrl('http://localhost:${p.port}')">:${p.port}</span>` : ''}
+        <button class="running-stop" onclick="event.stopPropagation();stopProcess(${p.id})" title="Stop">&#9632;</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+function buildFilters() {
+  const tc = {}; allProjects.forEach(p => p.types.forEach(t => { tc[t] = (tc[t]||0)+1; }));
+  let html = `<div class="filter-section-title">View</div>
+    <button class="filter-btn active" onclick="setFilter('all',this)"><span>All projects</span><span class="count">${allProjects.length}</span></button>
+    <button class="filter-btn" onclick="setFilter('running',this)"><span>Running</span><span class="count" id="filter-running-count">0</span></button>
+    <button class="filter-btn" onclick="setFilter('git',this)"><span>With Git</span><span class="count">${allProjects.filter(p=>p.git).length}</span></button>
+    <button class="filter-btn" onclick="setFilter('no-git',this)"><span>Without Git</span><span class="count">${allProjects.filter(p=>!p.git).length}</span></button>
+    <button class="filter-btn" onclick="setFilter('dirty',this)"><span>Uncommitted</span><span class="count">${allProjects.filter(p=>p.git&&p.git.dirty).length}</span></button>
+    <button class="filter-btn" onclick="setFilter('needs-install',this)"><span>Missing node_modules</span><span class="count">${allProjects.filter(p=>p.hasPackageJson&&!p.hasNodeModules).length}</span></button>
+    <div class="filter-section-title">Technology</div>`;
+  for (const [type, count] of Object.entries(tc).sort((a,b) => b[1]-a[1])) {
+    html += `<button class="filter-btn" onclick="setFilter('type:${type}',this)"><span>${type[0].toUpperCase()+type.slice(1)}</span><span class="count">${count}</span></button>`;
+  }
+
+  const parentDirs = [...new Set(allProjects.map(p => p.parentDir).filter(Boolean))];
+  if (parentDirs.length > 1) {
+    html += `<div class="filter-section-title">Directory</div>`;
+    for (const dir of parentDirs) {
+      const count = allProjects.filter(p => p.parentDir === dir).length;
+      const label = dir.replace(/^\/Users\/[^/]+/, '~');
+      html += `<button class="filter-btn" onclick="setFilter('dir:${esc(dir)}',this)"><span>${esc(label)}</span><span class="count">${count}</span></button>`;
+    }
+  }
+
+  document.getElementById('filters').innerHTML = html;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderProjects();
+}
+
+function setView(v) { currentView=v; document.getElementById('view-grid').classList.toggle('active',v==='grid'); document.getElementById('view-list').classList.toggle('active',v==='list'); renderProjects(); }
+
+function getFiltered() {
+  let p = [...allProjects];
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  if (q) p = p.filter(x => x.name.toLowerCase().includes(q) || x.types.some(t=>t.includes(q)) || (x.description||'').toLowerCase().includes(q) || (x.readmeSnippet||'').toLowerCase().includes(q));
+  if (currentFilter==='git') p=p.filter(x=>x.git);
+  else if (currentFilter==='no-git') p=p.filter(x=>!x.git);
+  else if (currentFilter==='dirty') p=p.filter(x=>x.git&&x.git.dirty);
+  else if (currentFilter==='running') p=p.filter(x=>x.running.length>0);
+  else if (currentFilter==='needs-install') p=p.filter(x=>x.hasPackageJson&&!x.hasNodeModules);
+  else if (currentFilter.startsWith('type:')) { const t=currentFilter.split(':')[1]; p=p.filter(x=>x.types.includes(t)); }
+  else if (currentFilter.startsWith('dir:')) { const d=currentFilter.substring(4); p=p.filter(x=>x.parentDir===d); }
+  const s = document.getElementById('sort').value;
+  if (s==='name') p.sort((a,b)=>a.name.localeCompare(b.name));
+  else if (s==='name-desc') p.sort((a,b)=>b.name.localeCompare(a.name));
+  else if (s==='created') p.sort((a,b)=>new Date(b.created)-new Date(a.created));
+  else if (s==='running') p.sort((a,b)=>(b.running.length-a.running.length)||new Date(b.lastModified)-new Date(a.lastModified));
+  return p;
+}
+
+function formatDate(d) { const diff=Date.now()-new Date(d); const days=Math.floor(diff/864e5); if(days===0)return'Today'; if(days===1)return'Yesterday'; if(days<7)return days+' days ago'; if(days<30)return Math.floor(days/7)+' weeks ago'; if(days<365)return Math.floor(days/30)+' months ago'; return Math.floor(days/365)+' years ago'; }
+function formatSize(b) { if(b<1024)return b+' B'; if(b<1048576)return Math.round(b/1024)+' KB'; return(b/1048576).toFixed(1)+' MB'; }
+
+function mainType(types) {
+  for (const t of ['expo','nextjs','react','vue','vite','svelte','express','node','python','go','rust','typescript','ios','xcode','cordova','php','ruby','docker','html','web','shell','makefile','electron','other']) if(types.includes(t))return t;
+  return types[0]||'other';
+}
+
+function getPrimaryAction(p) {
+  if (p.running.length > 0) {
+    const r = p.running[0];
+    return r.port ? { label: `Open :${r.port}`, action: () => openUrl(`http://localhost:${r.port}`), class: 'preview-btn' } : { label: 'View log', action: () => showLogs(r.id), class: 'preview-btn' };
+  }
+  const a = p.actions.find(x => x.priority && x.category === 'run');
+  if (a) return { label: a.label, action: () => runAction(a, p), class: 'run-btn' };
+  const prev = p.actions.find(x => x.id === 'preview-html');
+  if (prev) return { label: prev.label, action: () => previewHtml(p.path, prev.htmlFile), class: 'preview-btn' };
+  const setup = p.actions.find(x => x.id === 'npm-install');
+  if (setup) return { label: 'npm install', action: () => npmInstall(p.path), class: 'run-btn' };
+  return null;
+}
+
+function renderProjects() {
+  const projects = getFiltered(), container = document.getElementById('content');
+  const info = `<div class="results-info">${projects.length} project${projects.length!==1?'s':''}</div>`;
+  if (!projects.length) { container.innerHTML = info+'<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><p>No projects found</p></div>'; return; }
+  container.innerHTML = info + (currentView === 'grid'
+    ? `<div class="grid">${projects.map(renderCard).join('')}</div>`
+    : `<div class="list">${projects.map(renderListItem).join('')}</div>`);
+}
+
+function renderCard(p) {
+  const mt = mainType(p.types), icon = ICONS[mt]||'?', desc = p.description||p.readmeSnippet||'';
+  const isRunning = p.running.length > 0;
+  const gitHtml = p.git ? `<span class="git-badge ${p.git.dirty?'dirty':'clean'}">${p.git.branch||'git'}${p.git.dirty?` (+${p.git.changedFiles})`:''}</span>` : '<span class="git-badge no-git">no git</span>';
+  const runBadge = isRunning ? `<span class="running-badge"><span class="rb-dot"></span>${p.running[0].port ? ':'+p.running[0].port : 'running'}</span>` : '';
+  const primary = getPrimaryAction(p);
+  const stopBtn = isRunning ? `<button class="card-action-btn stop-btn" onclick="event.stopPropagation();stopProcess(${p.running[0].id})">${SVGI.stop} Stop</button>` : '';
+  const logBtn = isRunning ? `<button class="card-action-btn" onclick="event.stopPropagation();showLogs(${p.running[0].id})">Log</button>` : '';
+  const portBtn = isRunning && p.running[0].port ? `<button class="card-action-btn preview-btn" onclick="event.stopPropagation();openUrl('http://localhost:${p.running[0].port}')">${SVGI.globe} :${p.running[0].port}</button>` : '';
+
+  return `<div class="card ${isRunning?'is-running':''}" onclick="showDetail('${encodeURIComponent(p.name)}','${esc(p.parentDir||'')}')">
+    <div class="card-header">
+      <div class="card-icon icon-${mt}">${icon}</div>
+      <div><div class="card-title">${esc(p.name)}</div><div class="card-types">${p.types.map(t=>`<span class="type-badge type-${t}">${t}</span>`).join('')}</div></div>
+    </div>
+    ${desc?`<div class="card-desc">${esc(desc)}</div>`:''}
+    <div class="card-meta">${gitHtml} ${runBadge} <span>${formatDate(p.lastModified)}</span> <span>${p.fileCount} files</span></div>
+    <div class="card-actions">
+      ${primary && !isRunning ? `<button class="card-action-btn ${primary.class}" onclick="event.stopPropagation();cardAction(this)" data-pname="${encodeURIComponent(p.name)}" data-pdir="${esc(p.parentDir||'')}">${SVGI.play} ${primary.label}</button>` : ''}
+      ${portBtn}${logBtn}${stopBtn}
+      <button class="card-action-btn" onclick="event.stopPropagation();openInEditor('${esc(p.path)}')">${SVGI.zap} Editor</button>
+      <button class="card-action-btn" onclick="event.stopPropagation();openInFinder('${esc(p.path)}')">${SVGI.folder} Files</button>
+    </div>
+  </div>`;
+}
+
+function cardAction(btn) {
+  const name = decodeURIComponent(btn.dataset.pname);
+  const p = allProjects.find(x => x.name === name);
+  if (!p) return;
+  const primary = getPrimaryAction(p);
+  if (primary) primary.action();
+}
+
+function renderListItem(p) {
+  const mt = mainType(p.types), isRunning = p.running.length > 0;
+  const gitHtml = p.git ? `<span class="git-badge ${p.git.dirty?'dirty':'clean'}">${p.git.branch||'git'}${p.git.dirty?' +'+p.git.changedFiles:''}</span>` : '<span class="git-badge no-git">no git</span>';
+  const primary = getPrimaryAction(p);
+  return `<div class="list-item" onclick="showDetail('${encodeURIComponent(p.name)}','${esc(p.parentDir||'')}')">
+    <div class="item-icon icon-${mt}">${ICONS[mt]||'?'}</div>
+    <div class="item-name">${esc(p.name)} ${isRunning?'<span class="running-badge" style="font-size:10px"><span class="rb-dot"></span>'+(p.running[0].port?':'+p.running[0].port:'live')+'</span>':''}</div>
+    <div class="item-types">${p.types.slice(0,3).map(t=>`<span class="type-badge type-${t}">${t}</span>`).join('')}</div>
+    <div class="item-git">${gitHtml}</div>
+    <div class="item-date">${formatDate(p.lastModified)}</div>
+    <div class="item-actions">
+      ${primary ? `<button class="list-action-btn ${primary.class}" onclick="event.stopPropagation();cardAction(this)" data-pname="${encodeURIComponent(p.name)}" data-pdir="${esc(p.parentDir||'')}">${isRunning&&p.running[0].port?SVGI.globe:SVGI.play} ${primary.label}</button>` : ''}
+      ${isRunning ? `<button class="list-action-btn" style="color:var(--red);border-color:var(--red)" onclick="event.stopPropagation();stopProcess(${p.running[0].id})">${SVGI.stop}</button>` : ''}
+      <button class="list-action-btn" onclick="event.stopPropagation();openInEditor('${esc(p.path)}')">Editor</button>
+    </div>
+  </div>`;
+}
+
+function showDetail(enc, parentDir) {
+  const name = decodeURIComponent(enc), p = allProjects.find(x=>x.name===name && (!parentDir || x.parentDir===parentDir));
+  if (!p) return;
+  selectedProject = p;
+  const body = document.getElementById('detail-body'), acts = document.getElementById('detail-actions');
+
+  let gitSec = '';
+  if (p.git) {
+    gitSec = `<div class="detail-section"><h3>Git</h3><div class="detail-info-box">
+      <div class="detail-row"><span>Branch</span><span>${p.git.branch||'-'}</span></div>
+      <div class="detail-row"><span>Status</span><span style="color:${p.git.dirty?'var(--orange)':'var(--green)'}">${p.git.dirty?p.git.changedFiles+' changes':'Clean'}</span></div>
+      ${p.git.lastCommit?`<div class="detail-row"><span>Last commit</span><span style="max-width:180px;text-align:right;overflow:hidden;text-overflow:ellipsis">${esc(p.git.lastCommit)}</span></div>`:''}
+      ${p.git.lastCommitDate?`<div class="detail-row"><span>Date</span><span>${formatDate(p.git.lastCommitDate)}</span></div>`:''}
+      ${p.git.hasRemote?`<div class="detail-row"><span>Remote</span><span style="color:var(--green)">Yes</span></div>`:`<div class="detail-row"><span>Remote</span><span style="color:var(--text-muted)">No</span></div>`}
+    </div></div>`;
+  }
+
+  let runningSec = '';
+  if (p.running.length > 0) {
+    runningSec = `<div class="detail-section"><h3>Running Processes</h3>` +
+      p.running.map(r => `<div class="detail-info-box" style="margin-bottom:6px;cursor:pointer" onclick="showLogs(${r.id})">
+        <div class="detail-row"><span>Command</span><span style="font-family:monospace;font-size:12px">${esc(r.command)}</span></div>
+        ${r.port?`<div class="detail-row"><span>Port</span><span class="log-port" onclick="event.stopPropagation();openUrl('http://localhost:${r.port}')">localhost:${r.port}</span></div>`:''}
+        <div class="detail-row"><span>Started</span><span>${formatDate(r.startedAt)}</span></div>
+      </div>`).join('') + `</div>`;
+  }
+
+  body.innerHTML = `<h2>${esc(p.name)}</h2>
+    <div class="detail-path">${esc(p.path)}</div>
+    <div class="detail-badges">${p.types.map(t=>`<span class="type-badge type-${t}">${t}</span>`).join('')} ${!p.git?'<span class="git-badge no-git">no git</span>':''}</div>
+    ${p.description?`<div class="detail-section"><h3>Description</h3><p style="font-size:13px;color:var(--text-dim);line-height:1.5">${esc(p.description)}</p></div>`:''}
+    ${runningSec}${gitSec}
+    <div class="detail-section"><h3>Info</h3><div class="detail-info-box">
+      <div class="detail-row"><span>Files</span><span>${p.fileCount}</span></div>
+      <div class="detail-row"><span>Size</span><span>${formatSize(p.size)}</span></div>
+      <div class="detail-row"><span>Last modified</span><span>${formatDate(p.lastModified)}</span></div>
+      <div class="detail-row"><span>node_modules</span><span>${p.hasNodeModules?'Yes':'No'}</span></div>
+    </div></div>
+    <div class="detail-section"><h3>Files</h3><div class="detail-files">${p.files.map(f=>`<span class="detail-file">${esc(f)}</span>`).join('')}</div></div>`;
+
+  const grouped = {};
+  for (const a of p.actions) {
+    const cat = a.category;
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(a);
+  }
+
+  const catLabels = {open:'Open',run:'Run',setup:'Setup',build:'Build',preview:'Preview',test:'Test',script:'Scripts'};
+  const catOrder = ['run','preview','setup','build','test','open','script'];
+  const catClass = {run:'run-action',setup:'setup-action',preview:'preview-action',build:'',test:'',open:'',script:''};
+
+  let actHtml = '';
+  for (const cat of catOrder) {
+    if (!grouped[cat]) continue;
+    actHtml += `<div class="action-group"><div class="action-group-title">${catLabels[cat]||cat}</div>`;
+    for (const a of grouped[cat]) {
+      const ic = SVGI[a.icon] || '';
+      if (a.id === 'editor') actHtml += `<button class="detail-action-btn" onclick="openInEditor('${esc(p.path)}')">${ic} ${a.label}</button>`;
+      else if (a.id === 'finder') actHtml += `<button class="detail-action-btn" onclick="openInFinder('${esc(p.path)}')">${ic} ${a.label}</button>`;
+      else if (a.id === 'terminal') actHtml += `<button class="detail-action-btn" onclick="openInTerminal('${esc(p.path)}')">${ic} ${a.label}</button>`;
+      else if (a.id === 'xcode') actHtml += `<button class="detail-action-btn" onclick="openXcode('${esc(p.path)}','${a.xcProject}')">${ic} ${a.label}</button>`;
+      else if (a.id === 'npm-install') actHtml += `<button class="detail-action-btn setup-action" onclick="npmInstall('${esc(p.path)}')">${ic} ${a.label}</button>`;
+      else if (a.id === 'preview-html') actHtml += `<button class="detail-action-btn preview-action" onclick="previewHtml('${esc(p.path)}','${a.htmlFile}')">${ic} ${a.label}</button>`;
+      else if (a.command) actHtml += `<button class="detail-action-btn ${catClass[a.category]||''}" onclick="runCommand('${esc(p.path)}','${esc(a.command)}','${esc(a.label)}')">${ic} ${a.label}</button>`;
+    }
+    actHtml += '</div>';
+  }
+
+  if (!p.git) actHtml += `<div class="action-group"><div class="action-group-title">Git</div><button class="detail-action-btn" onclick="initGit('${esc(p.path)}')">Init Git</button></div>`;
+  if (p.git && p.git.remoteUrl) actHtml += `<button class="detail-action-btn" onclick="openUrl('${esc(p.git.remoteUrl)}')">${SVGI.globe} Open Remote</button>`;
+
+  acts.innerHTML = actHtml;
+  document.getElementById('detail-panel').classList.add('show');
+}
+
+function closeDetail() { document.getElementById('detail-panel').classList.remove('show'); selectedProject=null; }
+
+// ─── Actions ────────────────────────────────────────────────────────
+
+async function openInEditor(p) { await fetch('/api/open-editor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})}); toast('Opened in editor'); }
+async function openInFinder(p) { await fetch('/api/open-finder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})}); toast('Opened file manager'); }
+async function openInTerminal(p) { await fetch('/api/open-terminal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})}); toast('Opened terminal'); }
+async function openXcode(p,xc) { await fetch('/api/open-xcode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p,xcProject:xc})}); toast('Opened in Xcode'); }
+async function openUrl(u) { await fetch('/api/open-browser',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})}); }
+async function previewHtml(p,f) { await fetch('/api/open-html',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p,htmlFile:f})}); toast('Opened in browser'); }
+async function initGit(p) { await fetch('/api/git-init',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})}); toast('Git initialized!'); loadProjects(); }
+
+async function npmInstall(p) {
+  toast('Starting npm install...');
+  const res = await fetch('/api/npm-install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})});
+  const data = await res.json();
+  if (data.processId) showLogs(data.processId);
+}
+
+async function runCommand(projectPath, command, name) {
+  toast(`Starting: ${name}`);
+  const res = await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath,command,name})});
+  const data = await res.json();
+  if (data.processId) {
+    showLogs(data.processId);
+    setTimeout(() => { loadProjects(); loadProcesses(); }, 1000);
+  }
+}
+
+function runAction(action, project) {
+  if (action.command) runCommand(project.path, action.command, action.label);
+}
+
+async function stopProcess(id) {
+  await fetch(`/api/processes/${id}/stop`,{method:'POST'});
+  toast('Stopping process...');
+  setTimeout(() => { loadProjects(); loadProcesses(); }, 1500);
+}
+
+// ─── Log viewer ─────────────────────────────────────────────────────
+
+function showLogs(id) {
+  currentLogId = id;
+  const proc = runningProcesses.find(p => p.id === id);
+  document.getElementById('log-title').textContent = proc ? `${proc.projectName} - ${proc.command}` : 'Log';
+  document.getElementById('log-body').innerHTML = '<div style="color:var(--text-muted)">Loading...</div>';
+  document.getElementById('log-modal').classList.add('show');
+  pollLogs();
+}
+
+let lastLogTime = 0;
+async function pollLogs() {
+  if (!currentLogId) return;
+  try {
+    const res = await fetch(`/api/processes/${currentLogId}/logs?since=${lastLogTime}`);
+    const data = await res.json();
+    const body = document.getElementById('log-body');
+    if (data.logs.length) {
+      for (const l of data.logs) {
+        const div = document.createElement('div');
+        div.className = 'log-line ' + l.stream;
+        div.textContent = l.text;
+        body.appendChild(div);
+        lastLogTime = l.time;
+      }
+      body.scrollTop = body.scrollHeight;
+    }
+    const portBadge = document.getElementById('log-port-badge');
+    const openBtn = document.getElementById('log-open-btn');
+    if (data.port) {
+      portBadge.textContent = `localhost:${data.port}`;
+      portBadge.style.display = 'inline';
+      portBadge.dataset.port = data.port;
+      openBtn.style.display = 'block';
+    }
+    document.getElementById('log-stop-btn').style.display = data.alive ? 'block' : 'none';
+    if (data.alive) logPollTimer = setTimeout(pollLogs, 1000);
+  } catch {}
+}
+
+function openPort() {
+  const badge = document.getElementById('log-port-badge');
+  if (badge.dataset.port) openUrl(`http://localhost:${badge.dataset.port}`);
+}
+
+function stopFromLog() { if (currentLogId) stopProcess(currentLogId); }
+
+function closeLogModal() {
+  document.getElementById('log-modal').classList.remove('show');
+  clearTimeout(logPollTimer);
+  currentLogId = null; lastLogTime = 0;
+  document.getElementById('log-body').innerHTML = '';
+  document.getElementById('log-port-badge').style.display = 'none';
+  document.getElementById('log-open-btn').style.display = 'none';
+}
+
+// ─── Create modal ───────────────────────────────────────────────────
+
+function openCreateModal() {
+  const dirs = appSettings.projectDirectories || [];
+  const dirGroup = document.getElementById('create-dir-group');
+  if (dirs.length > 1) {
+    dirGroup.style.display = 'block';
+    document.getElementById('new-location').innerHTML = dirs.map(d =>
+      `<option value="${esc(d)}">${esc(d.replace(/^\/Users\/[^/]+/, '~'))}</option>`
+    ).join('');
+  } else {
+    dirGroup.style.display = 'none';
+  }
+  document.getElementById('create-modal').classList.add('show');
+  document.getElementById('new-name').focus();
+}
+
+function closeCreateModal() { document.getElementById('create-modal').classList.remove('show'); document.getElementById('new-name').value=''; }
+
+async function createProject() {
+  const name = document.getElementById('new-name').value.trim(); if(!name)return;
+  const dirs = appSettings.projectDirectories || [];
+  const parentDirectory = dirs.length > 1 ? document.getElementById('new-location').value : dirs[0];
+  const res = await fetch('/api/create-project',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name, template:document.getElementById('new-template').value, initGit:document.getElementById('new-git').checked, parentDirectory})});
+  if(res.ok){toast(`"${name}" created!`);closeCreateModal();loadProjects();}else{const e=await res.json();toast(e.error||'Error');}
+}
+
+// ─── Utilities ──────────────────────────────────────────────────────
+
+function toast(msg) { const el=document.createElement('div'); el.className='toast'; el.textContent=msg; document.getElementById('toasts').appendChild(el); setTimeout(()=>el.remove(),3000); }
+function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+document.getElementById('search').addEventListener('input', renderProjects);
+document.addEventListener('keydown', e => {
+  if (e.key==='k'&&(e.metaKey||e.ctrlKey)){e.preventDefault();document.getElementById('search').focus();}
+  if (e.key==='Escape'){closeDetail();closeCreateModal();closeLogModal();closeSettings();}
+  if (e.key===',' && (e.metaKey||e.ctrlKey)){e.preventDefault();openSettings();}
+});
+
+document.getElementById('welcome-dir-input').addEventListener('keydown', e => { if (e.key === 'Enter') welcomeAddDir(); });
+document.getElementById('settings-dir-input').addEventListener('keydown', e => { if (e.key === 'Enter') settingsAddDir(); });
+
+init();
+</script>
+</body>
+</html>

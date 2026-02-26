@@ -1,0 +1,27 @@
+{
+  "name": "dev-dashboard",
+  "version": "1.0.0",
+  "description": "A local development project dashboard that scans directories, detects project types, and provides quick actions",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "dashboard",
+    "development",
+    "projects",
+    "dev-tools",
+    "project-manager",
+    "local-development"
+  ],
+  "author": "Henrik Brendhagen",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "open": "^10.1.0"
+  }
+}
