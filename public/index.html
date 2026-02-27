@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
   <title>Basecamp</title>
   <style>
     :root {
@@ -122,6 +128,9 @@
     .git-badge.clean { background:var(--green-dim); color:var(--green); }
     .git-badge.dirty { background:var(--orange-dim); color:var(--orange); }
     .git-badge.no-git { background:var(--bg-input); color:var(--text-muted); }
+    .git-sync { font-size:10px; padding:2px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px; }
+    .git-sync.behind { background:var(--orange-dim); color:var(--orange); }
+    .git-sync.ahead { background:var(--blue-dim); color:var(--blue); }
     .running-badge { background:var(--green-dim); color:var(--green); font-size:11px; padding:2px 8px; border-radius:4px; display:inline-flex; align-items:center; gap:4px; }
     .running-badge .rb-dot { width:5px; height:5px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
     .card-actions { display:flex; gap:6px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); opacity:0; transition:opacity 0.2s; flex-wrap:wrap; }
@@ -339,6 +348,32 @@
     .disk-clean-btn { background:none; border:none; color:var(--orange); cursor:pointer; font-size:11px; text-decoration:underline; transition:color 0.15s; }
     .disk-clean-btn:hover { color:var(--red); }
     .nm-size { font-size:10px; color:var(--orange); font-family:'SF Mono',Monaco,monospace; }
+
+    /* Command palette */
+    .palette-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(8px); z-index:250; align-items:flex-start; justify-content:center; padding-top:min(20vh, 160px); }
+    .palette-overlay.show { display:flex; }
+    .palette { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; width:560px; max-height:480px; box-shadow:0 20px 60px rgba(0,0,0,0.5); display:flex; flex-direction:column; overflow:hidden; }
+    .palette-input-wrap { display:flex; align-items:center; padding:16px 20px; border-bottom:1px solid var(--border); gap:10px; }
+    .palette-input-wrap svg { color:var(--text-muted); flex-shrink:0; }
+    .palette-input { flex:1; background:none; border:none; color:var(--text); font-size:16px; outline:none; font-family:inherit; }
+    .palette-input::placeholder { color:var(--text-muted); }
+    .palette-hint { font-size:11px; color:var(--text-muted); background:var(--bg-input); padding:2px 6px; border-radius:4px; flex-shrink:0; }
+    .palette-results { flex:1; overflow-y:auto; padding:8px; }
+    .palette-results::-webkit-scrollbar { width:4px; }
+    .palette-results::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+    .palette-group-title { font-size:10px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); padding:8px 12px 4px; }
+    .palette-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; cursor:pointer; transition:background 0.1s; }
+    .palette-item:hover, .palette-item.active { background:var(--accent-glow); }
+    .palette-item.active { outline:1px solid var(--accent); }
+    .palette-item-icon { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+    .palette-item-text { flex:1; min-width:0; }
+    .palette-item-name { font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .palette-item-name mark { background:none; color:var(--accent); font-weight:700; }
+    .palette-item-detail { font-size:11px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .palette-item-badge { font-size:10px; padding:2px 7px; border-radius:4px; color:var(--text-muted); background:var(--bg-input); flex-shrink:0; }
+    .palette-empty { text-align:center; padding:32px 16px; color:var(--text-muted); font-size:13px; }
+    .palette-footer { padding:8px 16px; border-top:1px solid var(--border); display:flex; gap:16px; font-size:11px; color:var(--text-muted); }
+    .palette-footer kbd { background:var(--bg-input); border:1px solid var(--border); padding:1px 5px; border-radius:3px; font-family:'SF Mono',Monaco,monospace; font-size:10px; }
 
     /* Scan modal */
     .scan-modal { width:640px; max-height:80vh; display:flex; flex-direction:column; padding:0; overflow:hidden; }
@@ -611,6 +646,23 @@
   </div>
 </div>
 
+<!-- Command Palette -->
+<div class="palette-overlay" id="palette-overlay" onclick="if(event.target===this)closePalette()">
+  <div class="palette">
+    <div class="palette-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="palette-input" id="palette-input" type="text" placeholder="Search projects, actions, commands..." autocomplete="off">
+      <span class="palette-hint">esc</span>
+    </div>
+    <div class="palette-results" id="palette-results"></div>
+    <div class="palette-footer">
+      <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span>
+      <span><kbd>Enter</kbd> select</span>
+      <span><kbd>Esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toasts"></div>
 
 <script>
@@ -641,6 +693,8 @@ let allProjects = [], currentFilter = 'all', currentView = 'grid', selectedProje
 let runningProcesses = [], currentLogId = null, logPollTimer = null;
 let appSettings = {};
 let diskUsage = null;
+let prevAliveSet = new Set();
+let notifPermission = 'default';
 
 // ─── Init ───────────────────────────────────────────────────────────
 
@@ -651,6 +705,7 @@ async function init() {
   } catch { appSettings = { projectDirectories: [], editor: 'cursor', port: 4200, theme: 'dark', favorites: [] }; }
 
   applyTheme(appSettings.theme || 'dark');
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
   if (!appSettings.projectDirectories || appSettings.projectDirectories.length === 0) {
     showWelcomeScreen();
@@ -851,9 +906,39 @@ async function loadProjects() {
 async function loadProcesses() {
   try {
     const res = await fetch('/api/processes');
-    runningProcesses = await res.json();
+    const newProcesses = await res.json();
+    const nowAlive = new Set(newProcesses.filter(p => p.alive).map(p => p.id));
+    if (prevAliveSet.size > 0) {
+      for (const id of prevAliveSet) {
+        if (!nowAlive.has(id)) {
+          const proc = newProcesses.find(p => p.id === id);
+          if (proc) sendProcessNotification(proc);
+        }
+      }
+    }
+    prevAliveSet = nowAlive;
+    runningProcesses = newProcesses;
     updateRunningUI();
   } catch {}
+}
+
+function sendProcessNotification(proc) {
+  if (notifPermission !== 'granted' || document.hasFocus()) return;
+  const crashed = proc.exitCode !== 0;
+  const title = crashed ? `Process crashed: ${proc.projectName}` : `Process finished: ${proc.projectName}`;
+  const body = `${proc.command} exited with code ${proc.exitCode}`;
+  try {
+    const n = new Notification(title, { body, icon: crashed ? undefined : undefined, tag: `proc-${proc.id}` });
+    n.onclick = () => { window.focus(); showLogs(proc.id); n.close(); };
+  } catch {}
+}
+
+function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') { notifPermission = 'granted'; return; }
+  if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(p => { notifPermission = p; });
+  }
 }
 
 function updateStats() {
@@ -975,6 +1060,8 @@ function renderCard(p) {
   const mt = mainType(p.types), icon = ICONS[mt]||'?', desc = p.description||p.readmeSnippet||'';
   const isRunning = p.running.length > 0;
   const gitHtml = p.git ? `<span class="git-badge ${p.git.dirty?'dirty':'clean'}">${p.git.branch||'git'}${p.git.dirty?` (+${p.git.changedFiles})`:''}</span>` : '<span class="git-badge no-git">no git</span>';
+  const syncHtml = p.git && p.git.behind ? `<span class="git-sync behind">&darr;${p.git.behind}</span>` : '';
+  const aheadHtml = p.git && p.git.ahead ? `<span class="git-sync ahead">&uarr;${p.git.ahead}</span>` : '';
   const runBadge = isRunning ? `<span class="running-badge"><span class="rb-dot"></span>${p.running[0].port ? ':'+p.running[0].port : 'running'}</span>` : '';
   const primary = getPrimaryAction(p);
   const stopBtn = isRunning ? `<button class="card-action-btn stop-btn" onclick="event.stopPropagation();stopProcess(${p.running[0].id})">${SVGI.stop} Stop</button>` : '';
@@ -991,7 +1078,7 @@ function renderCard(p) {
       <div><div class="card-title">${esc(p.name)}</div><div class="card-types">${p.types.map(t=>`<span class="type-badge type-${t}">${t}</span>`).join('')}</div></div>
     </div>
     ${desc?`<div class="card-desc">${esc(desc)}</div>`:''}
-    <div class="card-meta">${gitHtml} ${runBadge} <span>${formatDate(p.lastModified)}</span> <span>${p.fileCount} files</span> ${nmHtml}</div>
+    <div class="card-meta">${gitHtml} ${syncHtml}${aheadHtml} ${runBadge} <span>${formatDate(p.lastModified)}</span> <span>${p.fileCount} files</span> ${nmHtml}</div>
     <div class="card-actions">
       ${primary && !isRunning ? `<button class="card-action-btn ${primary.class}" onclick="event.stopPropagation();cardAction(this)" data-pname="${encodeURIComponent(p.name)}" data-pdir="${esc(p.parentDir||'')}">${SVGI.play} ${primary.label}</button>` : ''}
       ${portBtn}${logBtn}${stopBtn}
@@ -1041,6 +1128,8 @@ function showDetail(enc, parentDir) {
       ${p.git.lastCommit?`<div class="detail-row"><span>Last commit</span><span style="max-width:180px;text-align:right;overflow:hidden;text-overflow:ellipsis">${esc(p.git.lastCommit)}</span></div>`:''}
       ${p.git.lastCommitDate?`<div class="detail-row"><span>Date</span><span>${formatDate(p.git.lastCommitDate)}</span></div>`:''}
       ${p.git.hasRemote?`<div class="detail-row"><span>Remote</span><span style="color:var(--green)">Yes</span></div>`:`<div class="detail-row"><span>Remote</span><span style="color:var(--text-muted)">No</span></div>`}
+      ${p.git.behind?`<div class="detail-row"><span>Behind</span><span style="color:var(--orange)">${p.git.behind} commit${p.git.behind>1?'s':''}</span></div>`:''}
+      ${p.git.ahead?`<div class="detail-row"><span>Ahead</span><span style="color:var(--blue)">${p.git.ahead} commit${p.git.ahead>1?'s':''}</span></div>`:''}
     </div></div>`;
   }
 
@@ -1096,6 +1185,7 @@ function showDetail(enc, parentDir) {
   }
 
   if (!p.git) actHtml += `<div class="action-group"><div class="action-group-title">Git</div><button class="detail-action-btn" onclick="initGit('${esc(p.path)}')">Init Git</button></div>`;
+  if (p.git && p.git.behind) actHtml += `<div class="action-group"><div class="action-group-title">Sync</div><button class="detail-action-btn run-action" onclick="gitPull('${esc(p.path)}')">${SVGI.download} Pull ${p.git.behind} commit${p.git.behind>1?'s':''}</button></div>`;
   if (p.git && p.git.remoteUrl) actHtml += `<button class="detail-action-btn" onclick="openUrl('${esc(p.git.remoteUrl)}')">${SVGI.globe} Open Remote</button>`;
 
   const detailNmSize = diskUsage && diskUsage.projects && diskUsage.projects[p.path];
@@ -1122,6 +1212,15 @@ async function openUrl(u) { await fetch('/api/open-browser',{method:'POST',heade
 async function previewHtml(p,f) { await fetch('/api/open-html',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p,htmlFile:f})}); toast('Opened in browser'); }
 async function initGit(p) { await fetch('/api/git-init',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})}); toast('Git initialized!'); loadProjects(); }
 
+async function gitPull(p) {
+  toast('Pulling...');
+  try {
+    const res = await fetch('/api/git-pull',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})});
+    if (res.ok) { const d = await res.json(); toast(d.output || 'Pull complete'); loadProjects(); }
+    else { const e = await res.json(); toast(e.error || 'Pull failed'); }
+  } catch { toast('Pull failed'); }
+}
+
 async function npmInstall(p) {
   toast('Starting npm install...');
   const res = await fetch('/api/npm-install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})});
@@ -1130,6 +1229,7 @@ async function npmInstall(p) {
 }
 
 async function runCommand(projectPath, command, name) {
+  requestNotifPermission();
   toast(`Starting: ${name}`);
   const res = await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath,command,name})});
   const data = await res.json();
@@ -1467,6 +1567,89 @@ async function cleanAllNodeModules() {
   loadDiskUsage();
 }
 
+// ─── Command Palette ────────────────────────────────────────────────
+
+let paletteIdx = 0, paletteItems = [];
+
+function openPalette() {
+  document.getElementById('palette-overlay').classList.add('show');
+  const input = document.getElementById('palette-input');
+  input.value = '';
+  input.focus();
+  paletteIdx = 0;
+  renderPaletteResults('');
+}
+
+function closePalette() {
+  document.getElementById('palette-overlay').classList.remove('show');
+}
+
+function renderPaletteResults(query) {
+  const results = document.getElementById('palette-results');
+  paletteItems = [];
+  const q = query.toLowerCase().trim();
+
+  const projectResults = allProjects
+    .filter(p => !q || p.name.toLowerCase().includes(q) || p.types.some(t => t.includes(q)))
+    .slice(0, 8);
+
+  const actions = [];
+  if (!q || 'settings'.includes(q)) actions.push({ name: 'Open Settings', detail: 'Cmd+,', action: () => { closePalette(); openSettings(); } });
+  if (!q || 'scan'.includes(q)) actions.push({ name: 'Scan for Projects', detail: 'Find projects on disk', action: () => { closePalette(); openScan(); } });
+  if (!q || 'theme'.includes(q) || 'dark'.includes(q) || 'light'.includes(q)) actions.push({ name: 'Toggle Theme', detail: 'Switch dark/light', action: () => { closePalette(); toggleTheme(); } });
+  if (!q || 'new'.includes(q) || 'create'.includes(q)) actions.push({ name: 'New Project', detail: 'Create from template', action: () => { closePalette(); openCreateModal(); } });
+  if (!q || 'about'.includes(q)) actions.push({ name: 'About Basecamp', detail: 'Version info', action: () => { closePalette(); openAbout(); } });
+
+  let html = '';
+
+  if (projectResults.length) {
+    html += '<div class="palette-group-title">Projects</div>';
+    for (const p of projectResults) {
+      const mt = mainType(p.types);
+      const icon = ICONS[mt] || '?';
+      const highlighted = q ? p.name.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark>$1</mark>') : p.name;
+      const idx = paletteItems.length;
+      paletteItems.push({
+        action: () => { closePalette(); openInEditor(p.path); },
+        altAction: () => { closePalette(); showDetail(encodeURIComponent(p.name), p.parentDir || ''); }
+      });
+      html += `<div class="palette-item ${idx===paletteIdx?'active':''}" data-idx="${idx}" onclick="executePaletteItem(${idx})" onmouseenter="paletteIdx=${idx};highlightPaletteItem()">
+        <div class="palette-item-icon icon-${mt}">${icon}</div>
+        <div class="palette-item-text"><div class="palette-item-name">${highlighted}</div><div class="palette-item-detail">${esc(p.path.replace(/^\/Users\/[^/]+/,'~'))}</div></div>
+        <span class="palette-item-badge">${mt}</span>
+      </div>`;
+    }
+  }
+
+  if (actions.length) {
+    html += '<div class="palette-group-title">Actions</div>';
+    for (const a of actions) {
+      const idx = paletteItems.length;
+      paletteItems.push({ action: a.action });
+      html += `<div class="palette-item ${idx===paletteIdx?'active':''}" data-idx="${idx}" onclick="executePaletteItem(${idx})" onmouseenter="paletteIdx=${idx};highlightPaletteItem()">
+        <div class="palette-item-icon" style="background:var(--accent-glow);color:var(--accent)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <div class="palette-item-text"><div class="palette-item-name">${a.name}</div><div class="palette-item-detail">${a.detail}</div></div>
+      </div>`;
+    }
+  }
+
+  if (!html) html = '<div class="palette-empty">No results found</div>';
+  results.innerHTML = html;
+}
+
+function highlightPaletteItem() {
+  document.querySelectorAll('.palette-item').forEach((el, i) => {
+    el.classList.toggle('active', i === paletteIdx);
+    if (i === paletteIdx) el.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+function executePaletteItem(idx) {
+  if (paletteItems[idx]) paletteItems[idx].action();
+}
+
 // ─── About ──────────────────────────────────────────────────────────
 
 function openAbout() { document.getElementById('about-modal').classList.add('show'); }
@@ -1478,10 +1661,24 @@ function toast(msg) { const el=document.createElement('div'); el.className='toas
 function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
 document.getElementById('search').addEventListener('input', renderProjects);
+document.getElementById('palette-input').addEventListener('input', e => {
+  paletteIdx = 0;
+  renderPaletteResults(e.target.value);
+});
 document.addEventListener('keydown', e => {
-  if (e.key==='k'&&(e.metaKey||e.ctrlKey)){e.preventDefault();document.getElementById('search').focus();}
-  if (e.key==='Escape'){closeDetail();closeCreateModal();closeLogModal();closeSettings();closeScan();closeAbout();}
-  if (e.key===',' && (e.metaKey||e.ctrlKey)){e.preventDefault();openSettings();}
+  const paletteOpen = document.getElementById('palette-overlay').classList.contains('show');
+  if ((e.key==='p'||e.key==='k')&&(e.metaKey||e.ctrlKey)){e.preventDefault();if(paletteOpen)closePalette();else openPalette();return;}
+  if (e.key===',' && (e.metaKey||e.ctrlKey)){e.preventDefault();openSettings();return;}
+  if (e.key==='Escape'){
+    if(paletteOpen){closePalette();return;}
+    closeDetail();closeCreateModal();closeLogModal();closeSettings();closeScan();closeAbout();
+    return;
+  }
+  if (paletteOpen) {
+    if (e.key==='ArrowDown'){e.preventDefault();paletteIdx=Math.min(paletteIdx+1,paletteItems.length-1);highlightPaletteItem();}
+    if (e.key==='ArrowUp'){e.preventDefault();paletteIdx=Math.max(paletteIdx-1,0);highlightPaletteItem();}
+    if (e.key==='Enter'){e.preventDefault();executePaletteItem(paletteIdx);}
+  }
 });
 
 document.getElementById('welcome-dir-input').addEventListener('keydown', e => { if (e.key === 'Enter') welcomeAddDir(); });

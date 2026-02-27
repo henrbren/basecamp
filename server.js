@@ -296,6 +296,12 @@ function getGitInfo(dirPath) {
     info.hasRemote = remotes.length > 0;
     if (info.hasRemote) { const m = remotes.match(/origin\s+(.+?)\s+\(fetch\)/); info.remoteUrl = m ? m[1] : null; }
   } catch { info.hasRemote = false; }
+  if (info.hasRemote) {
+    try {
+      info.ahead = parseInt(execSync('git rev-list --count @{u}..HEAD', opts).toString().trim()) || 0;
+      info.behind = parseInt(execSync('git rev-list --count HEAD..@{u}', opts).toString().trim()) || 0;
+    } catch { info.ahead = 0; info.behind = 0; }
+  }
   return info;
 }
 
@@ -585,6 +591,15 @@ app.delete('/api/processes/:id', (req, res) => {
 app.post('/api/git-init', (req, res) => {
   try { execSync('git init', { cwd: req.body.projectPath, env: shellEnv }); res.json({ ok: true }); }
   catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/git-pull', (req, res) => {
+  const { projectPath } = req.body;
+  if (!projectPath) return res.status(400).json({ error: 'projectPath required' });
+  try {
+    const output = execSync('git pull', { cwd: projectPath, timeout: 30000, env: shellEnv }).toString().trim();
+    res.json({ ok: true, output });
+  } catch (err) { res.status(500).json({ error: err.stderr ? err.stderr.toString() : err.message }); }
 });
 
 app.post('/api/create-project', (req, res) => {
