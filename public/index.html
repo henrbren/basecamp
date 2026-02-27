@@ -19,6 +19,25 @@
       --radius: 12px; --radius-sm: 8px;
       --shadow: 0 4px 24px rgba(0,0,0,0.3);
     }
+    :root[data-theme="light"] {
+      --bg: #f4f4f8; --bg-card: #ffffff; --bg-card-hover: #f8f8fc;
+      --bg-sidebar: #fafafe; --bg-input: #efeff4;
+      --border: #e0e0ea; --border-hover: #d0d0da;
+      --text: #1a1a2e; --text-dim: #555568; --text-muted: #8888a0;
+      --accent: #6366f1; --accent-glow: rgba(99,102,241,0.1); --accent-hover: #5558e6;
+      --green: #16a34a; --green-dim: rgba(22,163,74,0.1);
+      --orange: #d97706; --orange-dim: rgba(217,119,6,0.1);
+      --red: #dc2626; --red-dim: rgba(220,38,38,0.1);
+      --blue: #2563eb; --blue-dim: rgba(37,99,235,0.1);
+      --cyan: #0891b2; --pink: #db2777;
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    :root[data-theme="light"] .type-nextjs{background:#eee;color:#111}
+    :root[data-theme="light"] .type-express{background:#eee;color:#555}
+    :root[data-theme="light"] .icon-nextjs{background:#222}
+    :root[data-theme="light"] .type-shell{background:#eee;color:#555}
+    :root[data-theme="light"] .type-makefile{background:#eee;color:#555}
+    :root[data-theme="light"] .type-other{background:#eee;color:#888}
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif; background:var(--bg); color:var(--text); overflow:hidden; height:100vh; }
     .app { display:grid; grid-template-columns:260px 1fr; height:100vh; }
@@ -298,6 +317,29 @@
     .logo-icon-btn { cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; }
     .logo-icon-btn:hover { transform:scale(1.08); box-shadow:0 4px 16px rgba(99,102,241,0.3); }
 
+    /* Favorite star */
+    .fav-btn { position:absolute; top:12px; right:12px; background:none; border:none; color:var(--text-muted); cursor:pointer; padding:4px; border-radius:6px; transition:all 0.15s; opacity:0; z-index:2; }
+    .card:hover .fav-btn, .fav-btn.is-fav { opacity:1; }
+    .fav-btn:hover { color:var(--orange); transform:scale(1.15); }
+    .fav-btn.is-fav { color:var(--orange); opacity:1; }
+    .fav-btn.is-fav svg { fill:var(--orange); }
+
+    /* Theme toggle */
+    .theme-toggle { background:none; border:none; color:var(--text-muted); cursor:pointer; padding:4px; border-radius:6px; transition:all 0.15s; display:flex; align-items:center; }
+    .theme-toggle:hover { color:var(--text); background:var(--bg-input); }
+
+    /* Disk usage bar */
+    .disk-bar { margin-top:12px; padding:12px 20px; border-top:1px solid var(--border); }
+    .disk-bar-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+    .disk-bar-title { font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); }
+    .disk-bar-value { font-size:13px; font-weight:600; color:var(--orange); }
+    .disk-bar-track { height:4px; background:var(--bg-input); border-radius:2px; overflow:hidden; }
+    .disk-bar-fill { height:100%; background:linear-gradient(90deg,var(--orange),var(--red)); border-radius:2px; transition:width 0.5s ease; }
+    .disk-bar-meta { display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text-muted); }
+    .disk-clean-btn { background:none; border:none; color:var(--orange); cursor:pointer; font-size:11px; text-decoration:underline; transition:color 0.15s; }
+    .disk-clean-btn:hover { color:var(--red); }
+    .nm-size { font-size:10px; color:var(--orange); font-family:'SF Mono',Monaco,monospace; }
+
     /* Scan modal */
     .scan-modal { width:640px; max-height:80vh; display:flex; flex-direction:column; padding:0; overflow:hidden; }
     .scan-top { padding:28px 28px 0; flex-shrink:0; }
@@ -366,6 +408,9 @@
       <div class="logo">
         <div class="logo-icon logo-icon-btn" onclick="openAbout()" title="About Basecamp">B</div>
         <h1>Basecamp</h1>
+        <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle-btn" title="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        </button>
         <button class="settings-btn" onclick="openScan()" title="Scan for projects">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0110 10"/><line x1="12" y1="12" x2="12" y2="2"/></svg>
         </button>
@@ -383,6 +428,7 @@
     </div>
     <div class="sidebar-filters" id="filters"></div>
     <div class="sidebar-running" id="sidebar-running" style="display:none"></div>
+    <div class="disk-bar" id="disk-bar" style="display:none"></div>
     <div class="sidebar-actions">
       <button class="btn-create" onclick="openCreateModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -407,6 +453,7 @@
         <option value="name-desc">Name Z-A</option>
         <option value="created">Created</option>
         <option value="running">Running first</option>
+        <option value="favorites">Favorites first</option>
       </select>
     </div>
     <div class="content" id="content"><div class="loading"><div class="spinner"></div>Loading projects...</div></div>
@@ -587,9 +634,13 @@ const SVGI = {
   code:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
 };
 
+const SVGI_STAR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+const SVGI_STAR_FILLED = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+
 let allProjects = [], currentFilter = 'all', currentView = 'grid', selectedProject = null;
 let runningProcesses = [], currentLogId = null, logPollTimer = null;
 let appSettings = {};
+let diskUsage = null;
 
 // ─── Init ───────────────────────────────────────────────────────────
 
@@ -597,7 +648,9 @@ async function init() {
   try {
     const res = await fetch('/api/settings');
     appSettings = await res.json();
-  } catch { appSettings = { projectDirectories: [], editor: 'cursor', port: 4200 }; }
+  } catch { appSettings = { projectDirectories: [], editor: 'cursor', port: 4200, theme: 'dark', favorites: [] }; }
+
+  applyTheme(appSettings.theme || 'dark');
 
   if (!appSettings.projectDirectories || appSettings.projectDirectories.length === 0) {
     showWelcomeScreen();
@@ -605,6 +658,7 @@ async function init() {
     updateSubtitle();
     loadProjects();
     loadProcesses();
+    loadDiskUsage();
     startPolling();
   }
 }
@@ -829,8 +883,10 @@ function updateRunningUI() {
 
 function buildFilters() {
   const tc = {}; allProjects.forEach(p => p.types.forEach(t => { tc[t] = (tc[t]||0)+1; }));
+  const favCount = allProjects.filter(p => p.isFavorite).length;
   let html = `<div class="filter-section-title">View</div>
     <button class="filter-btn active" onclick="setFilter('all',this)"><span>All projects</span><span class="count">${allProjects.length}</span></button>
+    ${favCount ? `<button class="filter-btn" onclick="setFilter('favorites',this)"><span>Favorites</span><span class="count">${favCount}</span></button>` : ''}
     <button class="filter-btn" onclick="setFilter('running',this)"><span>Running</span><span class="count" id="filter-running-count">0</span></button>
     <button class="filter-btn" onclick="setFilter('git',this)"><span>With Git</span><span class="count">${allProjects.filter(p=>p.git).length}</span></button>
     <button class="filter-btn" onclick="setFilter('no-git',this)"><span>Without Git</span><span class="count">${allProjects.filter(p=>!p.git).length}</span></button>
@@ -867,7 +923,8 @@ function getFiltered() {
   let p = [...allProjects];
   const q = document.getElementById('search').value.toLowerCase().trim();
   if (q) p = p.filter(x => x.name.toLowerCase().includes(q) || x.types.some(t=>t.includes(q)) || (x.description||'').toLowerCase().includes(q) || (x.readmeSnippet||'').toLowerCase().includes(q));
-  if (currentFilter==='git') p=p.filter(x=>x.git);
+  if (currentFilter==='favorites') p=p.filter(x=>x.isFavorite);
+  else if (currentFilter==='git') p=p.filter(x=>x.git);
   else if (currentFilter==='no-git') p=p.filter(x=>!x.git);
   else if (currentFilter==='dirty') p=p.filter(x=>x.git&&x.git.dirty);
   else if (currentFilter==='running') p=p.filter(x=>x.running.length>0);
@@ -879,6 +936,7 @@ function getFiltered() {
   else if (s==='name-desc') p.sort((a,b)=>b.name.localeCompare(a.name));
   else if (s==='created') p.sort((a,b)=>new Date(b.created)-new Date(a.created));
   else if (s==='running') p.sort((a,b)=>(b.running.length-a.running.length)||new Date(b.lastModified)-new Date(a.lastModified));
+  else if (s==='favorites') p.sort((a,b)=>((b.isFavorite?1:0)-(a.isFavorite?1:0))||new Date(b.lastModified)-new Date(a.lastModified));
   return p;
 }
 
@@ -923,13 +981,17 @@ function renderCard(p) {
   const logBtn = isRunning ? `<button class="card-action-btn" onclick="event.stopPropagation();showLogs(${p.running[0].id})">Log</button>` : '';
   const portBtn = isRunning && p.running[0].port ? `<button class="card-action-btn preview-btn" onclick="event.stopPropagation();openUrl('http://localhost:${p.running[0].port}')">${SVGI.globe} :${p.running[0].port}</button>` : '';
 
+  const nmSize = diskUsage && diskUsage.projects && diskUsage.projects[p.path];
+  const nmHtml = nmSize ? `<span class="nm-size">${formatSize(nmSize)}</span>` : '';
+
   return `<div class="card ${isRunning?'is-running':''}" onclick="showDetail('${encodeURIComponent(p.name)}','${esc(p.parentDir||'')}')">
+    <button class="fav-btn ${p.isFavorite?'is-fav':''}" onclick="event.stopPropagation();toggleFav('${esc(p.path)}')" title="${p.isFavorite?'Remove from favorites':'Add to favorites'}">${p.isFavorite ? SVGI_STAR_FILLED : SVGI_STAR}</button>
     <div class="card-header">
       <div class="card-icon icon-${mt}">${icon}</div>
       <div><div class="card-title">${esc(p.name)}</div><div class="card-types">${p.types.map(t=>`<span class="type-badge type-${t}">${t}</span>`).join('')}</div></div>
     </div>
     ${desc?`<div class="card-desc">${esc(desc)}</div>`:''}
-    <div class="card-meta">${gitHtml} ${runBadge} <span>${formatDate(p.lastModified)}</span> <span>${p.fileCount} files</span></div>
+    <div class="card-meta">${gitHtml} ${runBadge} <span>${formatDate(p.lastModified)}</span> <span>${p.fileCount} files</span> ${nmHtml}</div>
     <div class="card-actions">
       ${primary && !isRunning ? `<button class="card-action-btn ${primary.class}" onclick="event.stopPropagation();cardAction(this)" data-pname="${encodeURIComponent(p.name)}" data-pdir="${esc(p.parentDir||'')}">${SVGI.play} ${primary.label}</button>` : ''}
       ${portBtn}${logBtn}${stopBtn}
@@ -1035,6 +1097,14 @@ function showDetail(enc, parentDir) {
 
   if (!p.git) actHtml += `<div class="action-group"><div class="action-group-title">Git</div><button class="detail-action-btn" onclick="initGit('${esc(p.path)}')">Init Git</button></div>`;
   if (p.git && p.git.remoteUrl) actHtml += `<button class="detail-action-btn" onclick="openUrl('${esc(p.git.remoteUrl)}')">${SVGI.globe} Open Remote</button>`;
+
+  const detailNmSize = diskUsage && diskUsage.projects && diskUsage.projects[p.path];
+  if (p.hasNodeModules) {
+    actHtml += `<div class="action-group"><div class="action-group-title">Cleanup</div>
+      <button class="detail-action-btn" style="border-color:rgba(245,158,11,0.3);color:var(--orange)" onclick="cleanNodeModules('${esc(p.path)}')">
+        ${SVGI.folder} Delete node_modules${detailNmSize ? ' ('+formatSize(detailNmSize)+')' : ''}
+      </button></div>`;
+  }
 
   acts.innerHTML = actHtml;
   document.getElementById('detail-panel').classList.add('show');
@@ -1295,6 +1365,106 @@ async function scanAddDir(dir, btn) {
       toast(err.error || 'Failed to add');
     }
   } catch { toast('Failed to add directory'); }
+}
+
+// ─── Theme ──────────────────────────────────────────────────────────
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) {
+    btn.innerHTML = theme === 'light'
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>';
+    btn.title = theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode';
+  }
+}
+
+async function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  try {
+    await fetch('/api/settings', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ theme: next }) });
+    appSettings.theme = next;
+  } catch {}
+}
+
+// ─── Favorites ──────────────────────────────────────────────────────
+
+async function toggleFav(projectPath) {
+  try {
+    const res = await fetch('/api/favorites/toggle', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ projectPath })
+    });
+    const data = await res.json();
+    const project = allProjects.find(p => p.path === projectPath);
+    if (project) project.isFavorite = data.favorited;
+    renderProjects();
+    buildFilters();
+  } catch {}
+}
+
+// ─── Disk Usage ─────────────────────────────────────────────────────
+
+async function loadDiskUsage() {
+  try {
+    const res = await fetch('/api/disk-usage');
+    diskUsage = await res.json();
+    renderDiskBar();
+    renderProjects();
+  } catch {}
+}
+
+function renderDiskBar() {
+  const el = document.getElementById('disk-bar');
+  if (!diskUsage || !diskUsage.total) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const totalGB = diskUsage.total / (1024*1024*1024);
+  const pct = Math.min(totalGB / 10 * 100, 100);
+  el.innerHTML = `
+    <div class="disk-bar-header">
+      <span class="disk-bar-title">node_modules</span>
+      <span class="disk-bar-value">${formatSize(diskUsage.total)}</span>
+    </div>
+    <div class="disk-bar-track"><div class="disk-bar-fill" style="width:${pct}%"></div></div>
+    <div class="disk-bar-meta">
+      <span>${diskUsage.count} project${diskUsage.count !== 1 ? 's' : ''}</span>
+      <button class="disk-clean-btn" onclick="cleanAllNodeModules()">Clean all</button>
+    </div>`;
+}
+
+async function cleanNodeModules(projectPath) {
+  if (!confirm('Delete node_modules? You can reinstall with npm install.')) return;
+  toast('Cleaning node_modules...');
+  try {
+    const res = await fetch('/api/clean-node-modules', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ projectPath })
+    });
+    if (res.ok) {
+      toast('node_modules deleted');
+      loadProjects();
+      loadDiskUsage();
+    } else {
+      const err = await res.json();
+      toast(err.error || 'Failed to clean');
+    }
+  } catch { toast('Failed to clean node_modules'); }
+}
+
+async function cleanAllNodeModules() {
+  const count = diskUsage ? diskUsage.count : 0;
+  if (!confirm(`Delete node_modules from ${count} projects? This will free ${formatSize(diskUsage.total)}. You can reinstall with npm install.`)) return;
+  toast('Cleaning all node_modules...');
+  const paths = Object.keys(diskUsage.projects || {});
+  for (const p of paths) {
+    try { await fetch('/api/clean-node-modules', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ projectPath: p }) }); }
+    catch {}
+  }
+  toast(`Cleaned ${paths.length} projects`);
+  loadProjects();
+  loadDiskUsage();
 }
 
 // ─── About ──────────────────────────────────────────────────────────

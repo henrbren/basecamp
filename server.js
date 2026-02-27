@@ -14,13 +14,24 @@ const DEFAULT_CONFIG = {
   projectDirectories: [],
   port: 4200,
   editor: 'cursor',
+  theme: 'dark',
+  favorites: [],
 };
 
 function loadConfig() {
   try {
     return { ...DEFAULT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) };
   } catch {
-    return { ...DEFAULT_CONFIG };
+    const legacyPath = path.join(os.homedir(), '.devdashboard.json');
+    try {
+      const legacy = JSON.parse(fs.readFileSync(legacyPath, 'utf8'));
+      const migrated = { ...DEFAULT_CONFIG, ...legacy };
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(migrated, null, 2));
+      console.log(`  Migrated config from ${legacyPath}`);
+      return migrated;
+    } catch {
+      return { ...DEFAULT_CONFIG };
+    }
   }
 }
 
@@ -411,6 +422,7 @@ app.get('/api/projects', (req, res) => {
           lastModified: stat.mtime, created: stat.birthtime,
           size: getProjectSize(dirPath),
           running: runningHere,
+          isFavorite: (config.favorites || []).includes(dirPath),
         });
       }
     }
@@ -610,9 +622,79 @@ app.delete('/api/projects/:name', (req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
+// ─── API: Favorites ───────────────────────────────────────────────────
+
+app.post('/api/favorites/toggle', (req, res) => {
+  const { projectPath } = req.body;
+  if (!projectPath) return res.status(400).json({ error: 'projectPath required' });
+  if (!config.favorites) config.favorites = [];
+  const idx = config.favorites.indexOf(projectPath);
+  if (idx >= 0) config.favorites.splice(idx, 1);
+  else config.favorites.push(projectPath);
+  saveConfig(config);
+  res.json({ favorited: idx < 0, favorites: config.favorites });
+});
+
+// ─── API: Disk Usage ──────────────────────────────────────────────────
+
+let diskUsageCache = null;
+
+app.get('/api/disk-usage', (req, res) => {
+  if (diskUsageCache && !req.query.refresh && Date.now() - diskUsageCache.timestamp < 300000) {
+    return res.json(diskUsageCache);
+  }
+  const results = {};
+  let total = 0;
+  for (const parentDir of config.projectDirectories) {
+    if (!fs.existsSync(parentDir)) continue;
+    try {
+      for (const entry of fs.readdirSync(parentDir, { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+        const nmPath = path.join(parentDir, entry.name, 'node_modules');
+        if (!fs.existsSync(nmPath)) continue;
+        try {
+          const cmd = PLATFORM === 'win32'
+            ? `powershell -command "(Get-ChildItem -Recurse '${nmPath}' | Measure-Object -Property Length -Sum).Sum"`
+            : `du -sk "${nmPath}" 2>/dev/null`;
+          const output = execSync(cmd, { timeout: 15000 }).toString().trim();
+          const sizeBytes = PLATFORM === 'win32'
+            ? parseInt(output)
+            : parseInt(output.split('\t')[0]) * 1024;
+          if (sizeBytes > 0) {
+            results[path.join(parentDir, entry.name)] = sizeBytes;
+            total += sizeBytes;
+          }
+        } catch {}
+      }
+    } catch {}
+  }
+  diskUsageCache = { projects: results, total, count: Object.keys(results).length, timestamp: Date.now() };
+  res.json(diskUsageCache);
+});
+
+app.post('/api/clean-node-modules', (req, res) => {
+  const { projectPath } = req.body;
+  if (!projectPath) return res.status(400).json({ error: 'projectPath required' });
+  const nmPath = path.join(projectPath, 'node_modules');
+  if (!fs.existsSync(nmPath)) return res.status(404).json({ error: 'No node_modules found' });
+  try {
+    fs.rmSync(nmPath, { recursive: true, force: true });
+    diskUsageCache = null;
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── API: Scanner ─────────────────────────────────────────────────────
 
 const SCAN_CACHE_PATH = path.join(os.homedir(), '.basecamp-scan.json');
+
+// Migrate legacy scan cache
+try {
+  const legacyScan = path.join(os.homedir(), '.devdashboard-scan.json');
+  if (!fs.existsSync(SCAN_CACHE_PATH) && fs.existsSync(legacyScan)) {
+    fs.copyFileSync(legacyScan, SCAN_CACHE_PATH);
+  }
+} catch {}
 
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'venv', '__pycache__', '.cache', '.npm', '.nvm',
