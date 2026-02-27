@@ -110,8 +110,22 @@ const shellEnv = {
 const runningProcesses = new Map();
 let processIdCounter = 0;
 
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+function isPathSafe(targetPath) {
+  if (!targetPath || typeof targetPath !== 'string') return false;
+  const resolved = path.resolve(targetPath);
+  return config.projectDirectories.some(dir => resolved.startsWith(dir + path.sep) || resolved === dir);
+}
+
+function requirePath(req, res) {
+  const p = req.body.projectPath;
+  if (!p) { res.status(400).json({ error: 'Missing projectPath' }); return null; }
+  const resolved = path.resolve(p);
+  if (!fs.existsSync(resolved)) { res.status(404).json({ error: `Path not found: ${p}` }); return null; }
+  return resolved;
+}
 
 // ─── Project detection ────────────────────────────────────────────────
 
@@ -440,33 +454,46 @@ app.get('/api/projects', (req, res) => {
 // ─── API: Open things ─────────────────────────────────────────────────
 
 app.post('/api/open-editor', (req, res) => {
-  exec(editorCommand(req.body.projectPath), (e) => e ? res.status(500).json({ error: e.message }) : res.json({ ok: true }));
+  const p = requirePath(req, res); if (!p) return;
+  exec(editorCommand(p), (e) => e ? res.status(500).json({ error: `Could not open editor. Is ${config.editor || 'cursor'} installed?` }) : res.json({ ok: true }));
 });
 
 app.post('/api/open-cursor', (req, res) => {
-  exec(editorCommand(req.body.projectPath), (e) => e ? res.status(500).json({ error: e.message }) : res.json({ ok: true }));
+  const p = requirePath(req, res); if (!p) return;
+  exec(editorCommand(p), (e) => e ? res.status(500).json({ error: `Could not open editor. Is ${config.editor || 'cursor'} installed?` }) : res.json({ ok: true }));
 });
 
 app.post('/api/open-finder', (req, res) => {
-  exec(fileManagerCommand(req.body.projectPath), (e) => e ? res.status(500).json({ error: e.message }) : res.json({ ok: true }));
+  const p = requirePath(req, res); if (!p) return;
+  exec(fileManagerCommand(p), (e) => e ? res.status(500).json({ error: 'Could not open file manager' }) : res.json({ ok: true }));
 });
 
 app.post('/api/open-terminal', (req, res) => {
-  exec(terminalCommand(req.body.projectPath), (e) => e ? res.status(500).json({ error: e.message }) : res.json({ ok: true }));
+  const p = requirePath(req, res); if (!p) return;
+  exec(terminalCommand(p), (e) => e ? res.status(500).json({ error: 'Could not open terminal' }) : res.json({ ok: true }));
 });
 
 app.post('/api/open-browser', (req, res) => {
-  exec(openPath(req.body.url), (e) => e ? res.status(500).json({ error: e.message }) : res.json({ ok: true }));
+  const { url } = req.body;
+  if (!url || typeof url !== 'string') return res.status(400).json({ error: 'Missing URL' });
+  exec(openPath(url), (e) => e ? res.status(500).json({ error: 'Could not open browser' }) : res.json({ ok: true }));
 });
 
 app.post('/api/open-xcode', (req, res) => {
-  const { projectPath, xcProject } = req.body;
-  exec(openPath(path.join(projectPath, xcProject)), (e) => e ? res.status(500).json({ error: e.message }) : res.json({ ok: true }));
+  const p = requirePath(req, res); if (!p) return;
+  const { xcProject } = req.body;
+  if (!xcProject) return res.status(400).json({ error: 'Missing xcProject' });
+  const xcPath = path.join(p, xcProject);
+  if (!fs.existsSync(xcPath)) return res.status(404).json({ error: `Xcode project not found: ${xcProject}` });
+  exec(openPath(xcPath), (e) => e ? res.status(500).json({ error: 'Could not open Xcode' }) : res.json({ ok: true }));
 });
 
 app.post('/api/open-html', (req, res) => {
-  const { projectPath, htmlFile } = req.body;
-  exec(openPath(path.join(projectPath, htmlFile || 'index.html')), (e) => e ? res.status(500).json({ error: e.message }) : res.json({ ok: true }));
+  const p = requirePath(req, res); if (!p) return;
+  const { htmlFile } = req.body;
+  const filePath = path.join(p, htmlFile || 'index.html');
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: `File not found: ${htmlFile || 'index.html'}` });
+  exec(openPath(filePath), (e) => e ? res.status(500).json({ error: 'Could not open file' }) : res.json({ ok: true }));
 });
 
 // ─── API: Run processes ───────────────────────────────────────────────
@@ -474,16 +501,26 @@ app.post('/api/open-html', (req, res) => {
 app.post('/api/run', (req, res) => {
   const { projectPath, command, name } = req.body;
   if (!projectPath || !command) return res.status(400).json({ error: 'Missing projectPath or command' });
+  if (!fs.existsSync(projectPath)) return res.status(404).json({ error: `Project directory not found: ${projectPath}` });
 
   const id = ++processIdCounter;
   const logs = [];
   const maxLogs = 500;
 
-  const proc = spawn('bash', ['-c', command], {
-    cwd: projectPath,
-    env: shellEnv,
-    detached: false,
-  });
+  let proc;
+  try {
+    proc = spawn('bash', ['-c', command], {
+      cwd: projectPath,
+      env: shellEnv,
+      detached: false,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: `Failed to start process: ${err.message}` });
+  }
+
+  if (!proc.pid) {
+    return res.status(500).json({ error: 'Failed to start process. Is bash available?' });
+  }
 
   const entry = {
     proc, name: name || command, projectPath, command,
@@ -520,7 +557,9 @@ app.post('/api/run', (req, res) => {
 
 app.post('/api/npm-install', (req, res) => {
   const { projectPath } = req.body;
-  if (!projectPath) return res.status(400).json({ error: 'No path' });
+  if (!projectPath) return res.status(400).json({ error: 'Missing projectPath' });
+  if (!fs.existsSync(projectPath)) return res.status(404).json({ error: `Directory not found: ${projectPath}` });
+  if (!fs.existsSync(path.join(projectPath, 'package.json'))) return res.status(400).json({ error: 'No package.json found in this directory' });
 
   const id = ++processIdCounter;
   const logs = [];
@@ -530,6 +569,7 @@ app.post('/api/npm-install', (req, res) => {
   proc.stdout.on('data', (d) => { for (const l of d.toString().split('\n')) if (l) logs.push({ time: Date.now(), text: l, stream: 'stdout' }); });
   proc.stderr.on('data', (d) => { for (const l of d.toString().split('\n')) if (l) logs.push({ time: Date.now(), text: l, stream: 'stderr' }); });
   proc.on('close', (code) => { entry.exitCode = code; entry.endedAt = new Date().toISOString(); logs.push({ time: Date.now(), text: `npm install finished (code ${code})`, stream: 'system' }); });
+  proc.on('error', (err) => { logs.push({ time: Date.now(), text: `Error: ${err.message}`, stream: 'system' }); });
 
   runningProcesses.set(id, entry);
   res.json({ ok: true, processId: id });
@@ -589,22 +629,30 @@ app.delete('/api/processes/:id', (req, res) => {
 // ─── API: Git, Create, Delete ─────────────────────────────────────────
 
 app.post('/api/git-init', (req, res) => {
-  try { execSync('git init', { cwd: req.body.projectPath, env: shellEnv }); res.json({ ok: true }); }
-  catch (err) { res.status(500).json({ error: err.message }); }
+  const p = requirePath(req, res); if (!p) return;
+  try { execSync('git init', { cwd: p, env: shellEnv }); res.json({ ok: true }); }
+  catch (err) { res.status(500).json({ error: 'Failed to initialize git. Is git installed?' }); }
 });
 
 app.post('/api/git-pull', (req, res) => {
-  const { projectPath } = req.body;
-  if (!projectPath) return res.status(400).json({ error: 'projectPath required' });
+  const p = requirePath(req, res); if (!p) return;
+  if (!fs.existsSync(path.join(p, '.git'))) return res.status(400).json({ error: 'Not a git repository' });
   try {
-    const output = execSync('git pull', { cwd: projectPath, timeout: 30000, env: shellEnv }).toString().trim();
+    const output = execSync('git pull', { cwd: p, timeout: 30000, env: shellEnv }).toString().trim();
     res.json({ ok: true, output });
-  } catch (err) { res.status(500).json({ error: err.stderr ? err.stderr.toString() : err.message }); }
+  } catch (err) {
+    const stderr = err.stderr ? err.stderr.toString().trim() : '';
+    if (stderr.includes('CONFLICT')) res.status(409).json({ error: 'Pull failed: merge conflicts detected. Resolve them manually.' });
+    else if (stderr.includes('not a git repository')) res.status(400).json({ error: 'Not a git repository' });
+    else res.status(500).json({ error: stderr || err.message || 'Git pull failed' });
+  }
 });
 
 app.post('/api/create-project', (req, res) => {
   const { name, template, parentDirectory } = req.body;
-  if (!name) return res.status(400).json({ error: 'Name required' });
+  if (!name) return res.status(400).json({ error: 'Project name is required' });
+  if (/[<>:"/\\|?*\x00-\x1f]/.test(name)) return res.status(400).json({ error: 'Project name contains invalid characters' });
+  if (name.startsWith('.') || name.startsWith(' ')) return res.status(400).json({ error: 'Project name cannot start with a dot or space' });
   const targetDir = parentDirectory || config.projectDirectories[0];
   if (!targetDir) return res.status(400).json({ error: 'No project directory configured' });
   const dirPath = path.join(targetDir, name);
@@ -627,14 +675,15 @@ app.post('/api/create-project', (req, res) => {
 
 app.delete('/api/projects/:name', (req, res) => {
   const name = req.params.name;
+  if (!name || name === '.' || name === '..') return res.status(400).json({ error: 'Invalid project name' });
   for (const parentDir of config.projectDirectories) {
     const dirPath = path.join(parentDir, name);
-    if (fs.existsSync(dirPath)) {
+    if (fs.existsSync(dirPath) && path.dirname(dirPath) === parentDir) {
       fs.rmSync(dirPath, { recursive: true, force: true });
       return res.json({ ok: true });
     }
   }
-  res.status(404).json({ error: 'Not found' });
+  res.status(404).json({ error: 'Project not found in any configured directory' });
 });
 
 // ─── API: Favorites ───────────────────────────────────────────────────
@@ -849,11 +898,22 @@ app.get('/api/scan/cached', (req, res) => {
 
 // ─── Start ────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n  Basecamp running at http://localhost:${PORT}\n`);
   console.log(`  Config: ${CONFIG_PATH}`);
   console.log(`  Directories: ${config.projectDirectories.length ? config.projectDirectories.join(', ') : '(none configured)'}\n`);
   if (!process.env.NO_OPEN) {
     (async () => { try { (await import('open')).default(`http://localhost:${PORT}`); } catch {} })();
   }
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n  Error: Port ${PORT} is already in use.\n`);
+    console.error(`  Fix: Run "lsof -ti:${PORT} | xargs kill -9" to free the port,`);
+    console.error(`  or set a different port: PORT=4201 npm start\n`);
+  } else {
+    console.error(`\n  Error starting server: ${err.message}\n`);
+  }
+  process.exit(1);
 });

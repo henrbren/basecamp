@@ -1204,36 +1204,41 @@ function closeDetail() { document.getElementById('detail-panel').classList.remov
 
 // ─── Actions ────────────────────────────────────────────────────────
 
-async function openInEditor(p) { await fetch('/api/open-editor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})}); toast('Opened in editor'); }
-async function openInFinder(p) { await fetch('/api/open-finder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})}); toast('Opened file manager'); }
-async function openInTerminal(p) { await fetch('/api/open-terminal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})}); toast('Opened terminal'); }
-async function openXcode(p,xc) { await fetch('/api/open-xcode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p,xcProject:xc})}); toast('Opened in Xcode'); }
-async function openUrl(u) { await fetch('/api/open-browser',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u})}); }
-async function previewHtml(p,f) { await fetch('/api/open-html',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p,htmlFile:f})}); toast('Opened in browser'); }
-async function initGit(p) { await fetch('/api/git-init',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})}); toast('Git initialized!'); loadProjects(); }
+async function apiPost(url, body, successMsg) {
+  try {
+    const res = await fetch(url, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if (res.ok) { if (successMsg) toast(successMsg); return await res.json(); }
+    const err = await res.json().catch(() => ({}));
+    toast(err.error || 'Something went wrong');
+    return null;
+  } catch { toast('Could not connect to server'); return null; }
+}
+
+async function openInEditor(p) { await apiPost('/api/open-editor', {projectPath:p}, 'Opened in editor'); }
+async function openInFinder(p) { await apiPost('/api/open-finder', {projectPath:p}, 'Opened file manager'); }
+async function openInTerminal(p) { await apiPost('/api/open-terminal', {projectPath:p}, 'Opened terminal'); }
+async function openXcode(p,xc) { await apiPost('/api/open-xcode', {projectPath:p,xcProject:xc}, 'Opened in Xcode'); }
+async function openUrl(u) { await apiPost('/api/open-browser', {url:u}); }
+async function previewHtml(p,f) { await apiPost('/api/open-html', {projectPath:p,htmlFile:f}, 'Opened in browser'); }
+async function initGit(p) { const r = await apiPost('/api/git-init', {projectPath:p}, 'Git initialized!'); if (r) loadProjects(); }
 
 async function gitPull(p) {
   toast('Pulling...');
-  try {
-    const res = await fetch('/api/git-pull',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})});
-    if (res.ok) { const d = await res.json(); toast(d.output || 'Pull complete'); loadProjects(); }
-    else { const e = await res.json(); toast(e.error || 'Pull failed'); }
-  } catch { toast('Pull failed'); }
+  const r = await apiPost('/api/git-pull', {projectPath:p});
+  if (r) { toast(r.output || 'Pull complete'); loadProjects(); }
 }
 
 async function npmInstall(p) {
   toast('Starting npm install...');
-  const res = await fetch('/api/npm-install',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath:p})});
-  const data = await res.json();
-  if (data.processId) showLogs(data.processId);
+  const data = await apiPost('/api/npm-install', {projectPath:p});
+  if (data && data.processId) showLogs(data.processId);
 }
 
 async function runCommand(projectPath, command, name) {
   requestNotifPermission();
   toast(`Starting: ${name}`);
-  const res = await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectPath,command,name})});
-  const data = await res.json();
-  if (data.processId) {
+  const data = await apiPost('/api/run', {projectPath,command,name});
+  if (data && data.processId) {
     showLogs(data.processId);
     setTimeout(() => { loadProjects(); loadProcesses(); }, 1000);
   }
@@ -1244,9 +1249,8 @@ function runAction(action, project) {
 }
 
 async function stopProcess(id) {
-  await fetch(`/api/processes/${id}/stop`,{method:'POST'});
-  toast('Stopping process...');
-  setTimeout(() => { loadProjects(); loadProcesses(); }, 1500);
+  const r = await apiPost(`/api/processes/${id}/stop`, {});
+  if (r) { toast('Stopping process...'); setTimeout(() => { loadProjects(); loadProcesses(); }, 1500); }
 }
 
 // ─── Log viewer ─────────────────────────────────────────────────────
@@ -1326,11 +1330,13 @@ function openCreateModal() {
 function closeCreateModal() { document.getElementById('create-modal').classList.remove('show'); document.getElementById('new-name').value=''; }
 
 async function createProject() {
-  const name = document.getElementById('new-name').value.trim(); if(!name)return;
+  const name = document.getElementById('new-name').value.trim();
+  if (!name) { toast('Please enter a project name'); return; }
   const dirs = appSettings.projectDirectories || [];
+  if (!dirs.length) { toast('No project directory configured. Add one in Settings first.'); return; }
   const parentDirectory = dirs.length > 1 ? document.getElementById('new-location').value : dirs[0];
-  const res = await fetch('/api/create-project',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name, template:document.getElementById('new-template').value, initGit:document.getElementById('new-git').checked, parentDirectory})});
-  if(res.ok){toast(`"${name}" created!`);closeCreateModal();loadProjects();}else{const e=await res.json();toast(e.error||'Error');}
+  const r = await apiPost('/api/create-project', {name, template:document.getElementById('new-template').value, initGit:document.getElementById('new-git').checked, parentDirectory}, `"${name}" created!`);
+  if (r) { closeCreateModal(); loadProjects(); }
 }
 
 // ─── Scanner ────────────────────────────────────────────────────────
